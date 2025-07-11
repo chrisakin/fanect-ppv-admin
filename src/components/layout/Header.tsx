@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, Search, User, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -8,6 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { isDarkMode, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white dark:bg-dark-950 shadow-sm border-b border-gray-200 dark:border-dark-800 transition-colors duration-200">
@@ -46,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             aria-label="Toggle theme"
           >
             {isDarkMode ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
+              <Sun className="w-5 h-5 text-primary-400" />
             ) : (
               <Moon className="w-5 h-5 text-gray-600" />
             )}
@@ -66,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-medium text-gray-900 dark:text-dark-100">Admin User</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-dark-100">{user?.name || 'Admin User'}</p>
               <p className="text-xs text-gray-500 dark:text-dark-400">Super Admin</p>
             </div>
           </div>

@@ -6,10 +6,10 @@ import MobileSidebar from './MobileSidebar';
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
-  const isLoginPage = location.pathname === '/login';
+  const isAuthPage = location.pathname === '/login' || location.pathname.startsWith('/reset/');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  if (isLoginPage) {
+  if (isAuthPage) {
     return <Outlet />;
   }
 

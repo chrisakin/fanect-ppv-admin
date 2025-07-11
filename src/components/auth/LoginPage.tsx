@@ -1,76 +1,75 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Activity, Eye, EyeOff, Mail, Lock, Shield, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-type LoginStep = 'credentials' | 'otp' | 'forgot-password' | 'reset-success';
+type LoginStep = 'credentials' | 'otp' | 'forgot-password' | 'success';
 
 interface FormData {
   email: string;
   password: string;
   otp: string;
-  newPassword: string;
-  confirmPassword: string;
+  forgotEmail: string;
 }
 
 interface FormErrors {
   email?: string;
   password?: string;
   otp?: string;
-  newPassword?: string;
-  confirmPassword?: string;
+  forgotEmail?: string;
   general?: string;
 }
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, verifyOTP, resendOTP, forgotPassword } = useAuth();
+  
   const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loginStep, setLoginStep] = useState<LoginStep>('credentials');
   const [isLoading, setIsLoading] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
+  const [userEmail, setUserEmail] = useState('');
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
     otp: '',
-    newPassword: '',
-    confirmPassword: ''
+    forgotEmail: ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
   // Validation functions
   const validateEmail = (email: string): string | undefined => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!email) return 'Email is required';
+    if (email.length > 254) return 'Email is too long';
     if (!emailRegex.test(email)) return 'Please enter a valid email address';
     return undefined;
   };
 
   const validatePassword = (password: string): string | undefined => {
     if (!password) return 'Password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (password.length < 8) return 'Password must be at least 8 characters long';
+    if (password.length > 128) return 'Password is too long (max 128 characters)';
+    if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter';
+    if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter';
+    if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number';
+    if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) return 'Password must contain at least one special character';
     return undefined;
   };
 
   const validateOTP = (otp: string): string | undefined => {
     if (!otp) return 'OTP is required';
-    if (otp.length !== 6) return 'OTP must be 6 digits';
-    if (!/^\d+$/.test(otp)) return 'OTP must contain only numbers';
+    if (otp.length !== 6) return 'OTP must be exactly 6 digits';
+    if (!/^\d{6}$/.test(otp)) return 'OTP must contain only numbers';
     return undefined;
   };
 
-  const validateNewPassword = (password: string): string | undefined => {
-    if (!password) return 'New password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters';
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
-    }
-    return undefined;
-  };
-
-  const validateConfirmPassword = (confirmPassword: string, newPassword: string): string | undefined => {
-    if (!confirmPassword) return 'Please confirm your password';
-    if (confirmPassword !== newPassword) return 'Passwords do not match';
+  const validateForgotEmail = (email: string): string | undefined => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email) return 'Email is required';
+    if (email.length > 254) return 'Email is too long';
+    if (!emailRegex.test(email)) return 'Please enter a valid email address';
     return undefined;
   };
 
@@ -113,15 +112,15 @@ const LoginPage: React.FC = () => {
           return;
         }
 
-        // Simulate API call for login
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Call login API
+        const result = await login(formData.email, formData.password);
         
-        // Check if credentials are valid (simulate)
-        if (formData.email === 'admin@fanect.com' && formData.password === 'password123') {
+        if (result.success) {
+          setUserEmail(result.email || formData.email);
           setLoginStep('otp');
           setOtpTimer(60); // Start 60 second timer
         } else {
-          setErrors({ general: 'Invalid email or password' });
+          setErrors({ general: result.message || 'Invalid credentials' });
         }
       } else if (loginStep === 'otp') {
         // Validate OTP
@@ -133,13 +132,15 @@ const LoginPage: React.FC = () => {
           return;
         }
 
-        // Simulate OTP verification
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Call verify OTP API
+        const result = await verifyOTP(userEmail, formData.otp);
         
-        if (formData.otp === '123456') {
-          navigate('/');
+        if (result.success) {
+          // Redirect to intended page or dashboard
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
         } else {
-          setErrors({ otp: 'Invalid OTP. Please try again.' });
+          setErrors({ otp: result.message || 'Invalid OTP. Please try again.' });
         }
       }
     } catch (error) {
@@ -154,48 +155,24 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     setErrors({});
 
-    const emailError = validateEmail(formData.email);
+    const emailError = validateForgotEmail(formData.forgotEmail);
     if (emailError) {
-      setErrors({ email: emailError });
+      setErrors({ forgotEmail: emailError });
       setIsLoading(false);
       return;
     }
 
     try {
-      // Simulate sending reset email
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setLoginStep('otp');
-      setOtpTimer(60);
+      // Call forgot password API
+      const result = await forgotPassword(formData.forgotEmail);
+      
+      if (result.success) {
+        setLoginStep('success');
+      } else {
+        setErrors({ general: result.message || 'Failed to send reset email' });
+      }
     } catch (error) {
       setErrors({ general: 'Failed to send reset email. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrors({});
-
-    const newPasswordError = validateNewPassword(formData.newPassword);
-    const confirmPasswordError = validateConfirmPassword(formData.confirmPassword, formData.newPassword);
-
-    if (newPasswordError || confirmPasswordError) {
-      setErrors({
-        newPassword: newPasswordError,
-        confirmPassword: confirmPasswordError
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // Simulate password reset
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setLoginStep('reset-success');
-    } catch (error) {
-      setErrors({ general: 'Failed to reset password. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -206,10 +183,15 @@ const LoginPage: React.FC = () => {
     
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setOtpTimer(60);
-      setFormData(prev => ({ ...prev, otp: '' }));
-      setErrors(prev => ({ ...prev, otp: undefined }));
+      const result = await resendOTP(userEmail);
+      
+      if (result.success) {
+        setOtpTimer(60);
+        setFormData(prev => ({ ...prev, otp: '' }));
+        setErrors(prev => ({ ...prev, otp: undefined }));
+      } else {
+        setErrors({ general: result.message || 'Failed to resend OTP' });
+      }
     } catch (error) {
       setErrors({ general: 'Failed to resend OTP. Please try again.' });
     } finally {
@@ -221,7 +203,7 @@ const LoginPage: React.FC = () => {
     <form className="space-y-4 lg:space-y-6" onSubmit={handleLogin}>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-          Admin Email
+          Email Address
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-dark-400" />
@@ -312,7 +294,7 @@ const LoginPage: React.FC = () => {
   );
 
   const renderOTPForm = () => (
-    <form className="space-y-4 lg:space-y-6" onSubmit={loginStep === 'forgot-password' ? handlePasswordReset : handleLogin}>
+    <form className="space-y-4 lg:space-y-6" onSubmit={handleLogin}>
       <div>
         <label htmlFor="otp" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
           One-Time Password
@@ -353,76 +335,6 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      {loginStep === 'forgot-password' && (
-        <>
-          <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-              New Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-dark-400" />
-              <input
-                id="newPassword"
-                type={showNewPassword ? 'text' : 'password'}
-                required
-                value={formData.newPassword}
-                onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                className={`pl-10 pr-10 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 ${
-                  errors.newPassword ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                }`}
-                placeholder="Enter new password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-300 transition-colors duration-200"
-              >
-                {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.newPassword && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {errors.newPassword}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-              Confirm New Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-dark-400" />
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                required
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`pl-10 pr-10 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 ${
-                  errors.confirmPassword ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                }`}
-                placeholder="Confirm new password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-300 transition-colors duration-200"
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {errors.confirmPassword}
-              </p>
-            )}
-          </div>
-        </>
-      )}
-
       {errors.general && (
         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
@@ -440,7 +352,7 @@ const LoginPage: React.FC = () => {
         {isLoading ? (
           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
         ) : (
-          loginStep === 'forgot-password' ? 'Reset Password' : 'Sign In'
+          'Verify OTP'
         )}
       </button>
 
@@ -448,7 +360,7 @@ const LoginPage: React.FC = () => {
         type="button"
         onClick={() => {
           setLoginStep('credentials');
-          setFormData(prev => ({ ...prev, otp: '', newPassword: '', confirmPassword: '' }));
+          setFormData(prev => ({ ...prev, otp: '' }));
           setErrors({});
         }}
         className="w-full text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100 py-2 transition-colors duration-200"
@@ -461,27 +373,27 @@ const LoginPage: React.FC = () => {
   const renderForgotPasswordForm = () => (
     <form className="space-y-4 lg:space-y-6" onSubmit={handleForgotPassword}>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-          Admin Email
+        <label htmlFor="forgotEmail" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+          Email Address
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-dark-400" />
           <input
-            id="email"
+            id="forgotEmail"
             type="email"
             required
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
+            value={formData.forgotEmail}
+            onChange={(e) => handleInputChange('forgotEmail', e.target.value)}
             className={`pl-10 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 ${
-              errors.email ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
+              errors.forgotEmail ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
             }`}
-            placeholder="admin@fanect.com"
+            placeholder="Enter your email address"
           />
         </div>
-        {errors.email && (
+        {errors.forgotEmail && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
             <AlertCircle className="w-4 h-4 mr-1" />
-            {errors.email}
+            {errors.forgotEmail}
           </p>
         )}
       </div>
@@ -503,7 +415,7 @@ const LoginPage: React.FC = () => {
         {isLoading ? (
           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
         ) : (
-          'Send Reset Code'
+          'Send Reset Link'
         )}
       </button>
 
@@ -528,10 +440,10 @@ const LoginPage: React.FC = () => {
       </div>
       <div>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-100 mb-2">
-          Password Reset Successful
+          Reset Link Sent
         </h3>
         <p className="text-gray-600 dark:text-dark-300">
-          Your password has been successfully reset. You can now sign in with your new password.
+          We've sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.
         </p>
       </div>
       <button
@@ -541,14 +453,13 @@ const LoginPage: React.FC = () => {
             email: '',
             password: '',
             otp: '',
-            newPassword: '',
-            confirmPassword: ''
+            forgotEmail: ''
           });
           setErrors({});
         }}
         className="w-full bg-gradient-to-r from-primary-500 to-primary-700 text-white py-3 px-4 rounded-lg font-medium hover:from-primary-600 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl"
       >
-        Continue to Login
+        Back to Login
       </button>
     </div>
   );
@@ -561,8 +472,8 @@ const LoginPage: React.FC = () => {
         return 'Verify Your Identity';
       case 'forgot-password':
         return 'Reset Password';
-      case 'reset-success':
-        return 'Success!';
+      case 'success':
+        return 'Check Your Email';
       default:
         return 'Welcome Back';
     }
@@ -571,15 +482,15 @@ const LoginPage: React.FC = () => {
   const getStepDescription = () => {
     switch (loginStep) {
       case 'credentials':
-        return 'Sign in to your admin account';
+        return 'Enter your email and password to continue';
       case 'otp':
         return 'Enter the OTP sent to your email';
       case 'forgot-password':
         return 'Enter your email to receive a reset code';
-      case 'reset-success':
+      case 'success':
         return '';
       default:
-        return 'Sign in to your admin account';
+        return 'Enter your email and password to continue';
     }
   };
 
@@ -609,7 +520,7 @@ const LoginPage: React.FC = () => {
         {loginStep === 'credentials' && renderCredentialsForm()}
         {loginStep === 'otp' && renderOTPForm()}
         {loginStep === 'forgot-password' && renderForgotPasswordForm()}
-        {loginStep === 'reset-success' && renderSuccessMessage()}
+        {loginStep === 'success' && renderSuccessMessage()}
       </div>
     </div>
   );

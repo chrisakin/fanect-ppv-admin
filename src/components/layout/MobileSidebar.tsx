@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -20,6 +21,8 @@ interface MobileSidebarProps {
 }
 
 const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
+  const { logout } = useAuth();
+  
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Calendar, label: 'Events', path: '/events' },
@@ -30,6 +33,11 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
     { icon: Settings, label: 'Settings', path: '/settings' },
     { icon: HeadphonesIcon, label: 'Support', path: '/support' }
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+  };
 
   return (
     <>
@@ -91,7 +99,10 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Logout Button */}
         <div className="absolute bottom-0 w-full p-4">
-          <button className="flex items-center space-x-3 w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100 rounded-lg transition-all duration-200">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center space-x-3 w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100 rounded-lg transition-all duration-200"
+          >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
           </button>

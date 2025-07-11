@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -14,6 +15,8 @@ import {
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
+  const { logout } = useAuth();
+  
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Calendar, label: 'Events', path: '/events' },
@@ -24,6 +27,10 @@ const Sidebar: React.FC = () => {
     { icon: Settings, label: 'Settings', path: '/settings' },
     { icon: HeadphonesIcon, label: 'Support', path: '/support' }
   ];
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-dark-950 shadow-lg border-r border-gray-200 dark:border-dark-800 transition-colors duration-200">
@@ -61,7 +68,10 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="absolute bottom-0 w-full p-4">
-        <button className="flex items-center space-x-3 w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100 rounded-lg transition-all duration-200">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center space-x-3 w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100 rounded-lg transition-all duration-200"
+        >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </button>
