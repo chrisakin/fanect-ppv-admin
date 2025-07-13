@@ -30,7 +30,7 @@ const AdminLayout: React.FC = () => {
       <div className="lg:ml-64">
         <Header onMenuClick={() => setIsMobileSidebarOpen(true)} />
         <main className="p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {/* <Outlet /> */}
         </main>
       </div>
     </div>

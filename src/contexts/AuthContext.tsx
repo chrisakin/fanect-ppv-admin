@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
+import api from '../utils/api';
 import { useAuthStore } from '../store/authStore';
 
 interface User {
@@ -78,27 +79,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.verifyOTP({ email, code });
       
-      // Fetch user profile after successful verification
+      const { accessToken, refreshToken } = response.data;
+      
+      console.log('OTP verification successful, tokens received:', { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken 
+      });
+      
+      // Temporarily set the token in the header for the profile request
+      const originalAuthHeader = api.defaults.headers.common['Authorization'];
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      
+      // Fetch user profile with the new token
       try {
-        const profileResponse = await authService.getProfile();
+        console.log('Fetching user profile...');
+        const profileResponse = await api.get('/admin/auth/profile');
         
-        // Store tokens and user data
+        console.log('Profile fetch successful:', profileResponse.data);
+        
+        // Now save both tokens and user data together
         setAuth(
-          {
-            accessToken: response.data.accessToken,
-            refreshToken: response.data.refreshToken
-          },
-          profileResponse.data
+          { accessToken, refreshToken },
+          profileResponse.data.data
         );
+        
+        return { success: true, message: response.message };
       } catch (error) {
-        console.error('Failed to fetch user profile after OTP verification:', error);
+        // Restore original auth header
+        if (originalAuthHeader) {
+          api.defaults.headers.common['Authorization'] = originalAuthHeader;
+        } else {
+          delete api.defaults.headers.common['Authorization'];
+        }
+        
         return { 
           success: false, 
-          message: 'Login successful but failed to fetch profile. Please try again.' 
+          message: `Login successful but failed to fetch profile: ${error.response?.data?.message || error.message}` 
         };
+      } finally {
+        // Clean up - remove the temporary auth header since we'll set it properly via the store
+        if (!originalAuthHeader) {
+          delete api.defaults.headers.common['Authorization'];
+        }
       }
-      
-      return { success: true, message: response.message };
     } catch (error: any) {
       return { 
         success: false, 

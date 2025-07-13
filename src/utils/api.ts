@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_BASE_URL,
   timeout: 10000,
 });
 
@@ -58,7 +58,7 @@ api.interceptors.response.use(
       const refreshToken = tokenManager.getRefreshToken();
       if (refreshToken) {
         try {
-          const response = await axios.post('/admin/auth/refresh', {
+          const response = await axios.post(`${api.defaults.baseURL}/admin/auth/refresh`, {
             refreshToken
           });
           
