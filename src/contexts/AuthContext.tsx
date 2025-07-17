@@ -122,17 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           delete api.defaults.headers.common['Authorization'];
         }
       }
-    } catch (error: unknown) {
-      let message = 'OTP verification failed. Please try again.';
-      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data) {
-        // @ts-expect-error: dynamic error shape
-        message = error.response.data.message || message;
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
+    } catch (error: any) {
       return { 
         success: false, 
-        message
+        message: error.response?.data?.message || 'OTP verification failed. Please try again.' 
       };
     }
   };

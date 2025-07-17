@@ -4,13 +4,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminLayout from './components/layout/AdminLayout';
-import LoginPage from './pages/auth/LoginPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import Dashboard from './pages/dashboard/Dashboard';
-import EventsPage from './pages/events/EventsPage';
-import UsersPage from './pages/users/UsersPage';
-import PaymentsPage from './pages/payments/PaymentsPage';
-import SupportPage from './pages/support/SupportPage';
+import LoginPage from './components/auth/LoginPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
+import Dashboard from './components/dashboard/Dashboard';
+import EventsPage from './components/events/EventsPage';
+import UsersPage from './components/users/UsersPage';
+import PaymentsPage from './components/payments/PaymentsPage';
+import SupportPage from './components/support/SupportPage';
 
 function App() {
   return (
