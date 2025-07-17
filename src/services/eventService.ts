@@ -15,6 +15,8 @@ export interface ApiEvent {
   time: string;
   description: string;
   bannerUrl?: string;
+  trailerUrl?: string;
+  watermarkUrl?: string;
   prices: EventPrice[];
   published: boolean;
   status: 'Past' | 'Live' | 'Upcoming';

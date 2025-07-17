@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, X, Activity } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, X, Activity, Edit3 } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
 // Modal Component
@@ -324,17 +324,17 @@ const SingleEventPage: React.FC = () => {
         };
       case 'stream-start':
         return {
-          title: 'Start Stream',
-          message: 'Are you sure you want to start the stream for this event?',
-          confirmText: 'Start Stream',
+          title: 'Start Streaming',
+          message: 'Are you sure you want to start streaming for this event?',
+          confirmText: 'Start Streaming',
           confirmColor: 'bg-blue-600 hover:bg-blue-700',
           showReasonInput: false
         };
       case 'stream-end':
         return {
-          title: 'End Stream',
-          message: 'Are you sure you want to end the stream for this event?',
-          confirmText: 'End Stream',
+          title: 'Stop Streaming',
+          message: 'Are you sure you want to stop streaming for this event?',
+          confirmText: 'Stop Streaming',
           confirmColor: 'bg-red-600 hover:bg-red-700',
           showReasonInput: false
         };
@@ -411,6 +411,13 @@ const SingleEventPage: React.FC = () => {
                 
                 {/* Action buttons aligned with title */}
                 <div className="flex flex-wrap gap-2 lg:gap-3 flex-shrink-0">
+                  <button
+                    onClick={() => navigate(`/events/edit/${event._id}`)}
+                    className="px-3 lg:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span>Edit Event</span>
+                  </button>
                   {event.adminStatus === 'Pending' && (
                     <>
                       <button
@@ -494,9 +501,9 @@ const SingleEventPage: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-dark-300">Stream Status:</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    event.isStreaming ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                    event.status === 'Live' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                   }`}>
-                    {event.isStreaming ? 'Streaming' : 'Not Streaming'}
+                    {event.status === 'Live' ? 'Streaming' : 'Not Streaming'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -561,12 +568,6 @@ const SingleEventPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {event.publishedBy && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Published By:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{event.publishedBy}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-dark-300">Created:</span>
                   <span className="text-gray-900 dark:text-dark-100">
@@ -604,6 +605,38 @@ const SingleEventPage: React.FC = () => {
                     target.style.display = 'none';
                   }}
                 />
+              </div>
+            )}
+
+            {event.watermarkUrl && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Watermark</h3>
+                <img
+                  src={event.watermarkUrl}
+                  alt="Event Watermark"
+                  className="w-full h-32 object-contain rounded-lg bg-gray-50 dark:bg-dark-700"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            {event.trailerUrl && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Trailer</h3>
+                <video
+                  src={event.trailerUrl}
+                  controls
+                  className="w-full h-48 rounded-lg bg-gray-50 dark:bg-dark-700"
+                  onError={(e) => {
+                    const target = e.target as HTMLVideoElement;
+                    target.style.display = 'none';
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
               </div>
             )}
 

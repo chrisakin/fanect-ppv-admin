@@ -21,7 +21,9 @@ export interface Event {
   chatCount: number;
   streamPassPurchases: number;
   revenue: number;
-  thumbnailUrl?: string;
+  bannerUrl?: string;
+  watermarkUrl?: string;
+  trailerUrl?: string;
 }
 
 export interface EventCreator {

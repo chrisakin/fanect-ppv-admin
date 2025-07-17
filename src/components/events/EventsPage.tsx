@@ -525,13 +525,13 @@ const EventsPage: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleStreamAction(event._id, event.isStreaming ? 'stream-end' : 'stream-start');
+                      handleStreamAction(event._id, event.status === 'Live' ? 'stream-end' : 'stream-start');
                     }}
                     disabled={isLoading}
                     className="flex items-center w-full px-4 py-2 text-sm text-blue-700 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
                   >
                     <Activity className="w-4 h-4 mr-3" />
-                    {event.isStreaming ? 'End Stream' : 'Start Stream'}
+                    {event.status === 'Live' ? 'Stop Streaming' : 'Start Streaming'}
                   </button>
                   <button
                     onClick={(e) => {
