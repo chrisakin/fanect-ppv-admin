@@ -2,6 +2,143 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Filter, Search, Eye, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
+// Modal Component
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason?: string) => void;
+  title: string;
+  message: string;
+  confirmText: string;
+  confirmColor: string;
+  showReasonInput?: boolean;
+  isLoading?: boolean;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  confirmColor,
+  showReasonInput = false,
+  isLoading = false
+}) => {
+  const [reason, setReason] = useState('');
+
+  const handleConfirm = () => {
+    onConfirm(showReasonInput ? reason : undefined);
+  };
+
+  const handleClose = () => {
+    setReason('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">{title}</h3>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-dark-300"
+              disabled={isLoading}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <p className="text-gray-600 dark:text-dark-300 mb-6">{message}</p>
+          
+          {showReasonInput && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                Rejection Reason *
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Please provide a reason for rejecting this event..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 resize-none"
+                rows={4}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          )}
+          
+          <div className="flex space-x-3">
+            <button
+              onClick={handleClose}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={isLoading || (showReasonInput && !reason.trim())}
+              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${confirmColor}`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Processing...
+                </div>
+              ) : (
+                confirmText
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Success Alert Component
+interface SuccessAlertProps {
+  isOpen: boolean;
+  message: string;
+  onClose: () => void;
+}
+
+const SuccessAlert: React.FC<SuccessAlertProps> = ({ isOpen, message, onClose }) => {
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed top-4 right-4 z-50">
+      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg">
+        <div className="flex items-center">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-3" />
+          <p className="text-green-800 dark:text-green-200">{message}</p>
+          <button
+            onClick={onClose}
+            className="ml-4 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EventsPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ApiEvent | null>(null);
   const [events, setEvents] = useState<ApiEvent[]>([]);
@@ -10,6 +147,26 @@ const EventsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Modal states
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: 'approve' | 'reject' | 'unpublish' | null;
+    eventId: string | null;
+  }>({
+    isOpen: false,
+    type: null,
+    eventId: null
+  });
+  
+  // Success alert state
+  const [successAlert, setSuccessAlert] = useState<{
+    isOpen: boolean;
+    message: string;
+  }>({
+    isOpen: false,
+    message: ''
+  });
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,8 +197,8 @@ const EventsPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch events
-  const fetchEvents = async (page: number = 1) => {
+  // Fetch events with search and filters
+  const fetchEvents = async (page: number = 1, searchTerm: string = '') => {
     try {
       setLoading(true);
       setError(null);
@@ -50,7 +207,8 @@ const EventsPage: React.FC = () => {
         startDate: filters.startDate,
         endDate: filters.endDate,
         status: filters.status,
-        adminStatus: filters.adminStatus
+        adminStatus: filters.adminStatus,
+        searchTerm: searchTerm.trim()
       };
       
       const response = await eventService.getAllEvents(page, limit, apiFilters);
@@ -68,14 +226,14 @@ const EventsPage: React.FC = () => {
 
   // Load events on component mount, page change, or filter change
   useEffect(() => {
-    fetchEvents(currentPage);
+    fetchEvents(currentPage, filters.searchTerm);
   }, [currentPage, filters.status, filters.adminStatus, filters.startDate, filters.endDate]);
 
   // Handle search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
-        fetchEvents(1);
+        fetchEvents(1, filters.searchTerm);
       } else {
         setCurrentPage(1);
       }
@@ -84,34 +242,67 @@ const EventsPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [filters.searchTerm]);
 
-  // Handle event actions
-  const handleEventAction = async (eventId: string, action: 'approve' | 'reject' | 'unpublish') => {
+  // Open confirmation modal
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish', eventId: string) => {
+    setModalState({
+      isOpen: true,
+      type,
+      eventId
+    });
+    setOpenDropdown(null);
+  };
+
+  // Close confirmation modal
+  const closeConfirmationModal = () => {
+    setModalState({
+      isOpen: false,
+      type: null,
+      eventId: null
+    });
+  };
+
+  // Handle event actions with confirmation
+  const handleEventAction = async (reason?: string) => {
+    if (!modalState.eventId || !modalState.type) return;
+
     try {
-      setActionLoading(eventId);
-      setOpenDropdown(null);
+      setActionLoading(modalState.eventId);
       let response;
       
-      switch (action) {
+      switch (modalState.type) {
         case 'approve':
-          response = await eventService.approveEvent(eventId);
+          response = await eventService.approveEvent(modalState.eventId);
           break;
         case 'reject':
-          response = await eventService.rejectEvent(eventId);
+          response = await eventService.rejectEvent(modalState.eventId, reason);
           break;
         case 'unpublish':
-          response = await eventService.unpublishEvent(eventId);
+          response = await eventService.unpublishEvent(modalState.eventId);
           break;
       }
       
-      // Refresh events list
-      await fetchEvents(currentPage);
+      // Update the selected event if it's currently being viewed
+      if (selectedEvent && selectedEvent._id === modalState.eventId) {
+        const updatedEvent = await eventService.getSingleEvent(modalState.eventId);
+        setSelectedEvent(updatedEvent.results);
+      }
       
-      // Show success message (you can implement a toast notification here)
-      console.log(response.message);
+      // Refresh events list
+      await fetchEvents(currentPage, filters.searchTerm);
+      
+      // Show success alert
+      setSuccessAlert({
+        isOpen: true,
+        message: response.message || `Event ${modalState.type}d successfully!`
+      });
+      
+      // Close modal
+      closeConfirmationModal();
       
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${action} event`);
-      console.error(`Error ${action}ing event:`, err);
+      setError(err.response?.data?.message || `Failed to ${modalState.type} event`);
+      console.error(`Error ${modalState.type}ing event:`, err);
+      closeConfirmationModal();
     } finally {
       setActionLoading(null);
     }
@@ -123,7 +314,7 @@ const EventsPage: React.FC = () => {
       setLoading(true);
       setOpenDropdown(null);
       const response = await eventService.getSingleEvent(eventId);
-      setSelectedEvent(response.data);
+      setSelectedEvent(response.results);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch event details');
       console.error('Error fetching event details:', err);
@@ -168,20 +359,43 @@ const EventsPage: React.FC = () => {
     return formatter.format(amount);
   };
 
-  const formatDateTime = (dateString: string, timeString?: string) => {
-    const date = new Date(dateString);
-    if (timeString) {
-      const [hours, minutes] = timeString.split(':');
-      date.setHours(parseInt(hours), parseInt(minutes));
+  // Get modal configuration based on action type
+  const getModalConfig = () => {
+    switch (modalState.type) {
+      case 'approve':
+        return {
+          title: 'Approve Event',
+          message: 'Are you sure you want to approve this event? This will make it visible to users.',
+          confirmText: 'Approve Event',
+          confirmColor: 'bg-green-600 hover:bg-green-700',
+          showReasonInput: false
+        };
+      case 'reject':
+        return {
+          title: 'Reject Event',
+          message: 'Are you sure you want to reject this event? Please provide a reason for rejection.',
+          confirmText: 'Reject Event',
+          confirmColor: 'bg-red-600 hover:bg-red-700',
+          showReasonInput: true
+        };
+      case 'unpublish':
+        return {
+          title: 'Unpublish Event',
+          message: 'Are you sure you want to unpublish this event? This will hide it from users.',
+          confirmText: 'Unpublish Event',
+          confirmColor: 'bg-yellow-600 hover:bg-yellow-700',
+          showReasonInput: false
+        };
+      default:
+        return {
+          title: '',
+          message: '',
+          confirmText: '',
+          confirmColor: '',
+          showReasonInput: false
+        };
     }
-    return date.toLocaleString();
   };
-
-  // Filter events based on search term (client-side filtering for search)
-  const filteredEvents = events.filter(event => {
-    if (!filters.searchTerm) return true;
-    return event.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
-  });
 
   // Pagination handlers
   const handlePreviousPage = () => {
@@ -223,10 +437,6 @@ const EventsPage: React.FC = () => {
     const isOpen = openDropdown === event._id;
     const isLoading = actionLoading === event._id;
 
-    const handleActionClick = (action: () => void) => {
-      // Don't close dropdown immediately, let the action complete first
-      action();
-    };
     return (
       <div className="relative">
         <button
@@ -246,7 +456,7 @@ const EventsPage: React.FC = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleActionClick(() => handleViewEvent(event._id));
+                  handleViewEvent(event._id);
                 }}
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200"
               >
@@ -259,7 +469,7 @@ const EventsPage: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleActionClick(() => handleEventAction(event._id, 'approve'));
+                      openConfirmationModal('approve', event._id);
                     }}
                     disabled={isLoading}
                     className="flex items-center w-full px-4 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
@@ -270,7 +480,7 @@ const EventsPage: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleActionClick(() => handleEventAction(event._id, 'reject'));
+                      openConfirmationModal('reject', event._id);
                     }}
                     disabled={isLoading}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
@@ -285,13 +495,27 @@ const EventsPage: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleActionClick(() => handleEventAction(event._id, 'unpublish'));
+                    openConfirmationModal('unpublish', event._id);
                   }}
                   disabled={isLoading}
                   className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
                 >
                   <Clock className="w-4 h-4 mr-3" />
                   Unpublish Event
+                </button>
+              )}
+
+              {event.adminStatus === 'Rejected' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openConfirmationModal('approve', event._id);
+                  }}
+                  disabled={isLoading}
+                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
+                >
+                  <CheckCircle className="w-4 h-4 mr-3" />
+                  Approve Event
                 </button>
               )}
             </div>
@@ -301,6 +525,7 @@ const EventsPage: React.FC = () => {
     );
   };
 
+  // Single Event Detail View
   if (selectedEvent) {
     return (
       <div className="space-y-4 lg:space-y-6">
@@ -315,45 +540,69 @@ const EventsPage: React.FC = () => {
         </div>
 
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
+          {/* Header with improved layout */}
           <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-dark-700">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100">{selectedEvent.name}</h1>
-                <p className="text-gray-600 dark:text-dark-300 mt-1">{selectedEvent.description}</p>
-                <div className="flex items-center space-x-2 mt-2">
-                  {getStatusIcon(selectedEvent.adminStatus)}
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedEvent.adminStatus)}`}>
-                    {selectedEvent.adminStatus}
-                  </span>
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100 break-words">
+                      {selectedEvent.name}
+                    </h1>
+                    <div className="flex items-center space-x-2 mt-2">
+                      {getStatusIcon(selectedEvent.adminStatus)}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedEvent.adminStatus)}`}>
+                        {selectedEvent.adminStatus}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons aligned with title */}
+                  <div className="flex flex-wrap gap-2 lg:gap-3 flex-shrink-0">
+                    {selectedEvent.adminStatus === 'Pending' && (
+                      <>
+                        <button
+                          onClick={() => openConfirmationModal('approve', selectedEvent._id)}
+                          disabled={actionLoading === selectedEvent._id}
+                          className="px-3 lg:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === selectedEvent._id ? 'Processing...' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => openConfirmationModal('reject', selectedEvent._id)}
+                          disabled={actionLoading === selectedEvent._id}
+                          className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === selectedEvent._id ? 'Processing...' : 'Reject'}
+                        </button>
+                      </>
+                    )}
+                    {selectedEvent.adminStatus === 'Approved' && (
+                      <button
+                        onClick={() => openConfirmationModal('unpublish', selectedEvent._id)}
+                        disabled={actionLoading === selectedEvent._id}
+                        className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {actionLoading === selectedEvent._id ? 'Processing...' : 'Unpublish'}
+                      </button>
+                    )}
+                    {selectedEvent.adminStatus === 'Rejected' && (
+                      <button
+                        onClick={() => openConfirmationModal('approve', selectedEvent._id)}
+                        disabled={actionLoading === selectedEvent._id}
+                        className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {actionLoading === selectedEvent._id ? 'Processing...' : 'Approve'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2 lg:gap-3">
-                {selectedEvent.adminStatus === 'Pending' && (
-                  <>
-                    <button
-                      onClick={() => handleEventAction(selectedEvent._id, 'approve')}
-                      disabled={actionLoading === selectedEvent._id}
-                      className="px-3 lg:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm disabled:opacity-50"
-                    >
-                      {actionLoading === selectedEvent._id ? 'Processing...' : 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => handleEventAction(selectedEvent._id, 'reject')}
-                      disabled={actionLoading === selectedEvent._id}
-                      className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm disabled:opacity-50"
-                    >
-                      {actionLoading === selectedEvent._id ? 'Processing...' : 'Reject'}
-                    </button>
-                  </>
-                )}
-                {selectedEvent.adminStatus === 'Approved' && (
-                  <button
-                    onClick={() => handleEventAction(selectedEvent._id, 'unpublish')}
-                    disabled={actionLoading === selectedEvent._id}
-                    className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50"
-                  >
-                    {actionLoading === selectedEvent._id ? 'Processing...' : 'Unpublish'}
-                  </button>
+                
+                {/* Description below the title and buttons */}
+                {selectedEvent.description && (
+                  <p className="text-gray-600 dark:text-dark-300 mt-4 break-words">
+                    {selectedEvent.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -365,7 +614,7 @@ const EventsPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Details</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Status:</span>
+                    <span className="text-gray-600 dark:text-dark-300">Admin Status:</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedEvent.adminStatus)}`}>
                       {selectedEvent.adminStatus}
                     </span>
@@ -373,7 +622,7 @@ const EventsPage: React.FC = () => {
                   <div className="flex justify-between items-start">
                     <span className="text-gray-600 dark:text-dark-300">Scheduled:</span>
                     <span className="text-gray-900 dark:text-dark-100 text-right text-sm">
-                      {formatDateTime(selectedEvent.eventDateTime)}
+                      {new Date(selectedEvent.date).toLocaleDateString()} at {selectedEvent.time}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -390,20 +639,74 @@ const EventsPage: React.FC = () => {
                     <span className="text-gray-600 dark:text-dark-300">Broadcast Software:</span>
                     <span className="text-gray-900 dark:text-dark-100 font-semibold">{selectedEvent.broadcastSoftware}</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-dark-300">Can Watch Saved Stream:</span>
+                    <span className="text-gray-900 dark:text-dark-100 font-semibold">
+                      {selectedEvent.canWatchSavedStream ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-dark-300">Broadcast Room:</span>
+                    <span className="text-gray-900 dark:text-dark-100 font-semibold">
+                      {selectedEvent.haveBroadcastRoom ? 'Yes' : 'No'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Pricing</h3>
                 <div className="space-y-2">
-                  {selectedEvent.prices.map((price, index) => (
-                    <div key={price._id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                      <span className="text-gray-600 dark:text-dark-300">Price {index + 1}:</span>
-                      <span className="text-gray-900 dark:text-dark-100 font-semibold">
-                        {formatCurrency(price.amount, price.currency)}
+                  {selectedEvent.prices && selectedEvent.prices.length > 0 ? (
+                    selectedEvent.prices.map((price, index) => (
+                      <div key={price._id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                        <span className="text-gray-600 dark:text-dark-300">Price {index + 1}:</span>
+                        <span className="text-gray-900 dark:text-dark-100 font-semibold">
+                          {formatCurrency(price.amount, price.currency)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                      <span className="text-gray-900 dark:text-dark-100 font-semibold">Free Event</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Creator Information</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-dark-300">Created By:</span>
+                    <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{selectedEvent.createdBy}</span>
+                  </div>
+                  {selectedEvent.publishedBy && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Published By:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{selectedEvent.publishedBy}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-dark-300">Created:</span>
+                    <span className="text-gray-900 dark:text-dark-100">
+                      {new Date(selectedEvent.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-dark-300">Last Updated:</span>
+                    <span className="text-gray-900 dark:text-dark-100">
+                      {new Date(selectedEvent.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {selectedEvent.scheduledTestDate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Test Date:</span>
+                      <span className="text-gray-900 dark:text-dark-100">
+                        {new Date(selectedEvent.scheduledTestDate).toLocaleDateString()}
                       </span>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -416,50 +719,75 @@ const EventsPage: React.FC = () => {
                     src={selectedEvent.bannerUrl}
                     alt={selectedEvent.name}
                     className="w-full h-48 object-cover rounded-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
                 </div>
               )}
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Technical Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Streaming Details</h3>
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Broadcast Room:</span>
-                    <span className="text-gray-900 dark:text-dark-100">
-                      {selectedEvent.haveBroadcastRoom ? 'Yes' : 'No'}
-                    </span>
-                  </div>
                   {selectedEvent.ivsChannelArn && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-dark-300">IVS Channel:</span>
-                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono truncate">
-                        {selectedEvent.ivsChannelArn.split('/').pop()}
+                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Channel ARN:</span>
+                      </div>
+                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
+                        {selectedEvent.ivsChannelArn}
                       </span>
                     </div>
                   )}
-                  {selectedEvent.scheduledTestDate && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-dark-300">Test Date:</span>
-                      <span className="text-gray-900 dark:text-dark-100">
-                        {new Date(selectedEvent.scheduledTestDate).toLocaleDateString()}
+                  
+                  {selectedEvent.ivsChatRoomArn && (
+                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Chat Room ARN:</span>
+                      </div>
+                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
+                        {selectedEvent.ivsChatRoomArn}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Created:</span>
-                    <span className="text-gray-900 dark:text-dark-100">
-                      {new Date(selectedEvent.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+                  
+                  {selectedEvent.ivsPlaybackUrl && (
+                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Playback URL:</span>
+                      </div>
+                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
+                        {selectedEvent.ivsPlaybackUrl}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={modalState.isOpen}
+          onClose={closeConfirmationModal}
+          onConfirm={handleEventAction}
+          isLoading={actionLoading === modalState.eventId}
+          {...getModalConfig()}
+        />
+
+        {/* Success Alert */}
+        <SuccessAlert
+          isOpen={successAlert.isOpen}
+          message={successAlert.message}
+          onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+        />
       </div>
     );
   }
 
+  // Main Events List View
   return (
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -600,7 +928,7 @@ const EventsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
-                  {filteredEvents.map((event) => (
+                  {events.map((event) => (
                     <tr key={event._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -609,6 +937,10 @@ const EventsPage: React.FC = () => {
                               src={event.bannerUrl}
                               alt={event.name}
                               className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover mr-3 flex-shrink-0"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
                             />
                           )}
                           <div className="min-w-0">
@@ -617,7 +949,7 @@ const EventsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
-                        {formatDateTime(event.eventDateTime)}
+                        {new Date(event.date).toLocaleDateString()} at {event.time}
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -637,7 +969,7 @@ const EventsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-dark-100">
-                        {event.prices.length > 0 ? formatCurrency(event.prices[0].amount, event.prices[0].currency) : 'Free'}
+                        {event.prices && event.prices.length > 0 ? formatCurrency(event.prices[0].amount, event.prices[0].currency) : 'Free'}
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <ActionDropdown event={event} />
@@ -702,6 +1034,22 @@ const EventsPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        onClose={closeConfirmationModal}
+        onConfirm={handleEventAction}
+        isLoading={actionLoading === modalState.eventId}
+        {...getModalConfig()}
+      />
+
+      {/* Success Alert */}
+      <SuccessAlert
+        isOpen={successAlert.isOpen}
+        message={successAlert.message}
+        onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+      />
     </div>
   );
 };

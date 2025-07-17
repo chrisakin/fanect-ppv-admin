@@ -43,7 +43,7 @@ export interface EventsResponse {
 
 export interface SingleEventResponse {
   message: string;
-  data: ApiEvent;
+  results: ApiEvent;
 }
 
 export const eventService = {
@@ -56,6 +56,7 @@ export const eventService = {
       endDate?: string;
       status?: string;
       adminStatus?: string;
+      searchTerm?: string;
     }
   ): Promise<EventsResponse> => {
     let url = `/admin/events/all-events?page=${page}&limit=${limit}`;
@@ -65,6 +66,7 @@ export const eventService = {
       if (filters.endDate) url += `&endDate=${filters.endDate}`;
       if (filters.status && filters.status !== 'All') url += `&status=${filters.status}`;
       if (filters.adminStatus && filters.adminStatus !== 'All') url += `&adminStatus=${filters.adminStatus}`;
+      if (filters.searchTerm && filters.searchTerm.trim()) url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
     }
     
     const response = await api.get(url);
@@ -84,8 +86,10 @@ export const eventService = {
   },
 
   // Reject an event
-  rejectEvent: async (id: string): Promise<{ message: string }> => {
-    const response = await api.put(`/admin/events/reject/${id}`);
+  rejectEvent: async (id: string, reason?: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/events/reject/${id}`, {
+      rejectionReason: reason
+    });
     return response.data;
   },
 

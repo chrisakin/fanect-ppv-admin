@@ -24,6 +24,13 @@ export interface Event {
   thumbnailUrl?: string;
 }
 
+// Add interface for API event structure to match the actual API response
+export interface ApiEventDetailed extends Omit<ApiEvent, 'eventDateTime'> {
+  canWatchSavedStream: boolean;
+  publishedBy?: string;
+  __v: number;
+}
+
 export interface Organizer {
   id: string;
   name: string;
