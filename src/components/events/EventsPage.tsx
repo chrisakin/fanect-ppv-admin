@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Filter, Search, Eye, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, Filter, Search, Eye, Edit3, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
 // Modal Component
@@ -140,6 +141,7 @@ const SuccessAlert: React.FC<SuccessAlertProps> = ({ isOpen, message, onClose })
 };
 
 const EventsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<ApiEvent | null>(null);
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -310,17 +312,8 @@ const EventsPage: React.FC = () => {
 
   // View single event
   const handleViewEvent = async (eventId: string) => {
-    try {
-      setLoading(true);
-      setOpenDropdown(null);
-      const response = await eventService.getSingleEvent(eventId);
-      setSelectedEvent(response.results);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch event details');
-      console.error('Error fetching event details:', err);
-    } finally {
-      setLoading(false);
-    }
+    setOpenDropdown(null);
+    navigate(`/events/${eventId}`);
   };
 
   const getStatusIcon = (adminStatus: string) => {
@@ -464,6 +457,18 @@ const EventsPage: React.FC = () => {
                 View Details
               </button>
               
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/events/edit/${event._id}`);
+                  setOpenDropdown(null);
+                }}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200"
+              >
+                <Edit3 className="w-4 h-4 mr-3" />
+                Edit Event
+              </button>
+              
               {event.adminStatus === 'Pending' && (
                 <>
                   <button
@@ -526,273 +531,16 @@ const EventsPage: React.FC = () => {
   };
 
   // Single Event Detail View
-  if (selectedEvent) {
-    return (
-      <div className="space-y-4 lg:space-y-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSelectedEvent(null)}
-            className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium transition-colors duration-200"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Events</span>
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
-          {/* Header with improved layout */}
-          <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-dark-700">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100 break-words">
-                      {selectedEvent.name}
-                    </h1>
-                    <div className="flex items-center space-x-2 mt-2">
-                      {getStatusIcon(selectedEvent.adminStatus)}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedEvent.adminStatus)}`}>
-                        {selectedEvent.adminStatus}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Action buttons aligned with title */}
-                  <div className="flex flex-wrap gap-2 lg:gap-3 flex-shrink-0">
-                    {selectedEvent.adminStatus === 'Pending' && (
-                      <>
-                        <button
-                          onClick={() => openConfirmationModal('approve', selectedEvent._id)}
-                          disabled={actionLoading === selectedEvent._id}
-                          className="px-3 lg:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                        >
-                          {actionLoading === selectedEvent._id ? 'Processing...' : 'Approve'}
-                        </button>
-                        <button
-                          onClick={() => openConfirmationModal('reject', selectedEvent._id)}
-                          disabled={actionLoading === selectedEvent._id}
-                          className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                        >
-                          {actionLoading === selectedEvent._id ? 'Processing...' : 'Reject'}
-                        </button>
-                      </>
-                    )}
-                    {selectedEvent.adminStatus === 'Approved' && (
-                      <button
-                        onClick={() => openConfirmationModal('unpublish', selectedEvent._id)}
-                        disabled={actionLoading === selectedEvent._id}
-                        className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {actionLoading === selectedEvent._id ? 'Processing...' : 'Unpublish'}
-                      </button>
-                    )}
-                    {selectedEvent.adminStatus === 'Rejected' && (
-                      <button
-                        onClick={() => openConfirmationModal('approve', selectedEvent._id)}
-                        disabled={actionLoading === selectedEvent._id}
-                        className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {actionLoading === selectedEvent._id ? 'Processing...' : 'Approve'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Description below the title and buttons */}
-                {selectedEvent.description && (
-                  <p className="text-gray-600 dark:text-dark-300 mt-4 break-words">
-                    {selectedEvent.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 p-4 lg:p-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Admin Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedEvent.adminStatus)}`}>
-                      {selectedEvent.adminStatus}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <span className="text-gray-600 dark:text-dark-300">Scheduled:</span>
-                    <span className="text-gray-900 dark:text-dark-100 text-right text-sm">
-                      {new Date(selectedEvent.date).toLocaleDateString()} at {selectedEvent.time}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Event Status:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-semibold">{selectedEvent.status}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Published:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-semibold">
-                      {selectedEvent.published ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Broadcast Software:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-semibold">{selectedEvent.broadcastSoftware}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Can Watch Saved Stream:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-semibold">
-                      {selectedEvent.canWatchSavedStream ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-dark-300">Broadcast Room:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-semibold">
-                      {selectedEvent.haveBroadcastRoom ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Pricing</h3>
-                <div className="space-y-2">
-                  {selectedEvent.prices && selectedEvent.prices.length > 0 ? (
-                    selectedEvent.prices.map((price, index) => (
-                      <div key={price._id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                        <span className="text-gray-600 dark:text-dark-300">Price {index + 1}:</span>
-                        <span className="text-gray-900 dark:text-dark-100 font-semibold">
-                          {formatCurrency(price.amount, price.currency)}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                      <span className="text-gray-900 dark:text-dark-100 font-semibold">Free Event</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Creator Information</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Created By:</span>
-                    <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{selectedEvent.createdBy}</span>
-                  </div>
-                  {selectedEvent.publishedBy && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-dark-300">Published By:</span>
-                      <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{selectedEvent.publishedBy}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Created:</span>
-                    <span className="text-gray-900 dark:text-dark-100">
-                      {new Date(selectedEvent.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-dark-300">Last Updated:</span>
-                    <span className="text-gray-900 dark:text-dark-100">
-                      {new Date(selectedEvent.updatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {selectedEvent.scheduledTestDate && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-dark-300">Test Date:</span>
-                      <span className="text-gray-900 dark:text-dark-100">
-                        {new Date(selectedEvent.scheduledTestDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {selectedEvent.bannerUrl && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Banner</h3>
-                  <img
-                    src={selectedEvent.bannerUrl}
-                    alt={selectedEvent.name}
-                    className="w-full h-48 object-cover rounded-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Streaming Details</h3>
-                <div className="space-y-3 text-sm">
-                  {selectedEvent.ivsChannelArn && (
-                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Channel ARN:</span>
-                      </div>
-                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
-                        {selectedEvent.ivsChannelArn}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {selectedEvent.ivsChatRoomArn && (
-                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Chat Room ARN:</span>
-                      </div>
-                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
-                        {selectedEvent.ivsChatRoomArn}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {selectedEvent.ivsPlaybackUrl && (
-                    <div className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Playback URL:</span>
-                      </div>
-                      <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
-                        {selectedEvent.ivsPlaybackUrl}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={modalState.isOpen}
-          onClose={closeConfirmationModal}
-          onConfirm={handleEventAction}
-          isLoading={actionLoading === modalState.eventId}
-          {...getModalConfig()}
-        />
-
-        {/* Success Alert */}
-        <SuccessAlert
-          isOpen={successAlert.isOpen}
-          message={successAlert.message}
-          onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
-        />
-      </div>
-    );
-  }
 
   // Main Events List View
   return (
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">Event Management</h1>
-        <button className="bg-primary-600 text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200">
+        <button 
+          onClick={() => navigate('/events/create')}
+          className="bg-primary-600 text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200"
+        >
           <Plus className="w-4 h-4" />
           <span>Create Event</span>
         </button>

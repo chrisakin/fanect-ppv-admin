@@ -26,8 +26,29 @@ export interface ApiEvent {
   ivsChannelArn?: string;
   ivsChatRoomArn?: string;
   ivsPlaybackUrl?: string;
+  ivsIngestEndpoint?: string;
+  ivsIngestStreamKey?: string;
   publishedBy?: string;
   eventDateTime: string;
+  canWatchSavedStream?: boolean;
+}
+
+export interface CreateEventData {
+  name: string;
+  date: string;
+  time: string;
+  description: string;
+  prices: EventPrice[];
+  haveBroadcastRoom: boolean;
+  broadcastSoftware: string;
+  scheduledTestDate?: string;
+  bannerUrl?: File;
+  watermarkUrl?: File;
+  eventTrailer?: File;
+}
+
+export interface UpdateEventData extends CreateEventData {
+  // Same as CreateEventData for now
 }
 
 export interface EventsResponse {
@@ -76,6 +97,82 @@ export const eventService = {
   // Get single event by ID
   getSingleEvent: async (id: string): Promise<SingleEventResponse> => {
     const response = await api.get(`/admin/events/single-event/${id}`);
+    return response.data;
+  },
+
+  // Create new event
+  createEvent: async (eventData: CreateEventData): Promise<{ message: string }> => {
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append('name', eventData.name);
+    formData.append('date', eventData.date);
+    formData.append('time', eventData.time);
+    formData.append('description', eventData.description);
+    formData.append('haveBroadcastRoom', eventData.haveBroadcastRoom.toString());
+    formData.append('broadcastSoftware', eventData.broadcastSoftware);
+    
+    if (eventData.scheduledTestDate) {
+      formData.append('scheduledTestDate', eventData.scheduledTestDate);
+    }
+    
+    // Add prices as JSON string
+    formData.append('prices', JSON.stringify(eventData.prices));
+    
+    // Add files
+    if (eventData.bannerUrl) {
+      formData.append('bannerUrl', eventData.bannerUrl);
+    }
+    if (eventData.watermarkUrl) {
+      formData.append('watermarkUrl', eventData.watermarkUrl);
+    }
+    if (eventData.eventTrailer) {
+      formData.append('eventTrailer', eventData.eventTrailer);
+    }
+    
+    const response = await api.post('/admin/events/create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Update existing event
+  updateEvent: async (id: string, eventData: UpdateEventData): Promise<{ message: string }> => {
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append('name', eventData.name);
+    formData.append('date', eventData.date);
+    formData.append('time', eventData.time);
+    formData.append('description', eventData.description);
+    formData.append('haveBroadcastRoom', eventData.haveBroadcastRoom.toString());
+    formData.append('broadcastSoftware', eventData.broadcastSoftware);
+    
+    if (eventData.scheduledTestDate) {
+      formData.append('scheduledTestDate', eventData.scheduledTestDate);
+    }
+    
+    // Add prices as JSON string
+    formData.append('prices', JSON.stringify(eventData.prices));
+    
+    // Add files (only if new files are provided)
+    if (eventData.bannerUrl instanceof File) {
+      formData.append('bannerUrl', eventData.bannerUrl);
+    }
+    if (eventData.watermarkUrl instanceof File) {
+      formData.append('watermarkUrl', eventData.watermarkUrl);
+    }
+    if (eventData.eventTrailer instanceof File) {
+      formData.append('eventTrailer', eventData.eventTrailer);
+    }
+    
+    const response = await api.put(`/admin/events/update/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

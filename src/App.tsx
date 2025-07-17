@@ -8,6 +8,8 @@ import LoginPage from './components/auth/LoginPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import Dashboard from './components/dashboard/Dashboard';
 import EventsPage from './components/events/EventsPage';
+import SingleEventPage from './components/events/SingleEventPage';
+import CreateEventPage from './components/events/CreateEventPage';
 import UsersPage from './components/users/UsersPage';
 import PaymentsPage from './components/payments/PaymentsPage';
 import SupportPage from './components/support/SupportPage';
@@ -30,6 +32,9 @@ function App() {
             }>
               <Route index element={<Dashboard />} />
               <Route path="/events" element={<EventsPage />} />
+              <Route path="/events/create" element={<CreateEventPage />} />
+              <Route path="/events/edit/:id" element={<CreateEventPage />} />
+              <Route path="/events/:id" element={<SingleEventPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/organizers" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Organizers - Coming Soon</h1></div>} />
               <Route path="/payments" element={<PaymentsPage />} />
