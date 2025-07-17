@@ -24,11 +24,19 @@ export interface Event {
   thumbnailUrl?: string;
 }
 
+export interface EventCreator {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 // Add interface for API event structure to match the actual API response
 export interface ApiEventDetailed extends Omit<ApiEvent, 'eventDateTime'> {
   canWatchSavedStream: boolean;
   publishedBy?: string;
   __v: number;
+  createdBy: EventCreator;
 }
 
 export interface Organizer {

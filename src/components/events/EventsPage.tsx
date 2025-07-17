@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Filter, Search, Eye, Edit3, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X } from 'lucide-react';
+import { Calendar, Filter, Search, Eye, Edit3, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X, Activity } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
 // Modal Component
@@ -276,7 +276,7 @@ const EventsPage: React.FC = () => {
           response = await eventService.approveEvent(modalState.eventId);
           break;
         case 'reject':
-          response = await eventService.rejectEvent(modalState.eventId, reason);
+          response = await eventService.rejectEvent(modalState.eventId, reason || '');
           break;
         case 'unpublish':
           response = await eventService.unpublishEvent(modalState.eventId);
@@ -310,6 +310,30 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  // Handle stream start/end actions
+  const handleStreamAction = async (eventId: string, session: 'stream-start' | 'stream-end') => {
+    try {
+      setActionLoading(eventId);
+      const response = await eventService.updateEventSession(eventId, session);
+      
+      // Refresh events list
+      await fetchEvents(currentPage, filters.searchTerm);
+      
+      // Show success alert
+      setSuccessAlert({
+        isOpen: true,
+        message: response.message || `Stream ${session === 'stream-start' ? 'started' : 'ended'} successfully!`
+      });
+      
+      setOpenDropdown(null);
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || `Failed to ${session === 'stream-start' ? 'start' : 'end'} stream`);
+      console.error(`Error ${session === 'stream-start' ? 'starting' : 'ending'} stream:`, err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
   // View single event
   const handleViewEvent = async (eventId: string) => {
     setOpenDropdown(null);
@@ -443,7 +467,7 @@ const EventsPage: React.FC = () => {
         {isOpen && (
           <div 
             ref={dropdownRef}
-            className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 z-50"
+            className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 z-[60]"
           >
             <div className="py-1">
               <button
@@ -497,17 +521,30 @@ const EventsPage: React.FC = () => {
               )}
               
               {event.adminStatus === 'Approved' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openConfirmationModal('unpublish', event._id);
-                  }}
-                  disabled={isLoading}
-                  className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                >
-                  <Clock className="w-4 h-4 mr-3" />
-                  Unpublish Event
-                </button>
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStreamAction(event._id, event.isStreaming ? 'stream-end' : 'stream-start');
+                    }}
+                    disabled={isLoading}
+                    className="flex items-center w-full px-4 py-2 text-sm text-blue-700 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    <Activity className="w-4 h-4 mr-3" />
+                    {event.isStreaming ? 'End Stream' : 'Start Stream'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openConfirmationModal('unpublish', event._id);
+                    }}
+                    disabled={isLoading}
+                    className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    <Clock className="w-4 h-4 mr-3" />
+                    Unpublish Event
+                  </button>
+                </>
               )}
 
               {event.adminStatus === 'Rejected' && (

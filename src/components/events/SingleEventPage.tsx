@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, X, Activity } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
 // Modal Component
@@ -151,7 +151,7 @@ const SingleEventPage: React.FC = () => {
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    type: 'approve' | 'reject' | 'unpublish' | null;
+    type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end' | null;
     eventId: string | null;
   }>({
     isOpen: false,
@@ -194,7 +194,7 @@ const SingleEventPage: React.FC = () => {
   }, [id]);
 
   // Open confirmation modal
-  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish', eventId: string) => {
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end', eventId: string) => {
     setModalState({
       isOpen: true,
       type,
@@ -224,10 +224,14 @@ const SingleEventPage: React.FC = () => {
           response = await eventService.approveEvent(modalState.eventId);
           break;
         case 'reject':
-          response = await eventService.rejectEvent(modalState.eventId, reason);
+          response = await eventService.rejectEvent(modalState.eventId, reason || '');
           break;
         case 'unpublish':
           response = await eventService.unpublishEvent(modalState.eventId);
+          break;
+        case 'stream-start':
+        case 'stream-end':
+          response = await eventService.updateEventSession(modalState.eventId, modalState.type);
           break;
       }
       
@@ -240,15 +244,15 @@ const SingleEventPage: React.FC = () => {
       // Show success alert
       setSuccessAlert({
         isOpen: true,
-        message: response.message || `Event ${modalState.type}d successfully!`
+        message: response.message || `Event ${modalState.type.replace('-', ' ')}d successfully!`
       });
       
       // Close modal
       closeConfirmationModal();
       
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${modalState.type} event`);
-      console.error(`Error ${modalState.type}ing event:`, err);
+      setError(err.response?.data?.message || `Failed to ${modalState.type.replace('-', ' ')} event`);
+      console.error(`Error ${modalState.type.replace('-', ' ')}ing event:`, err);
       closeConfirmationModal();
     } finally {
       setActionLoading(null);
@@ -316,6 +320,22 @@ const SingleEventPage: React.FC = () => {
           message: 'Are you sure you want to unpublish this event? This will hide it from users.',
           confirmText: 'Unpublish Event',
           confirmColor: 'bg-yellow-600 hover:bg-yellow-700',
+          showReasonInput: false
+        };
+      case 'stream-start':
+        return {
+          title: 'Start Stream',
+          message: 'Are you sure you want to start the stream for this event?',
+          confirmText: 'Start Stream',
+          confirmColor: 'bg-blue-600 hover:bg-blue-700',
+          showReasonInput: false
+        };
+      case 'stream-end':
+        return {
+          title: 'End Stream',
+          message: 'Are you sure you want to end the stream for this event?',
+          confirmText: 'End Stream',
+          confirmColor: 'bg-red-600 hover:bg-red-700',
           showReasonInput: false
         };
       default:
@@ -410,13 +430,23 @@ const SingleEventPage: React.FC = () => {
                     </>
                   )}
                   {event.adminStatus === 'Approved' && (
-                    <button
-                      onClick={() => openConfirmationModal('unpublish', event._id)}
-                      disabled={actionLoading === event._id}
-                      className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                    >
-                      {actionLoading === event._id ? 'Processing...' : 'Unpublish'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => openConfirmationModal(event.isStreaming ? 'stream-end' : 'stream-start', event._id)}
+                        disabled={actionLoading === event._id}
+                        className="px-3 lg:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap flex items-center space-x-2"
+                      >
+                        <Activity className="w-4 h-4" />
+                        <span>{actionLoading === event._id ? 'Processing...' : (event.isStreaming ? 'End Stream' : 'Start Stream')}</span>
+                      </button>
+                      <button
+                        onClick={() => openConfirmationModal('unpublish', event._id)}
+                        disabled={actionLoading === event._id}
+                        className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {actionLoading === event._id ? 'Processing...' : 'Unpublish'}
+                      </button>
+                    </>
                   )}
                   {event.adminStatus === 'Rejected' && (
                     <button
@@ -460,6 +490,14 @@ const SingleEventPage: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-dark-300">Event Status:</span>
                   <span className="text-gray-900 dark:text-dark-100 font-semibold">{event.status}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-dark-300">Stream Status:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    event.isStreaming ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                  }`}>
+                    {event.isStreaming ? 'Streaming' : 'Not Streaming'}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-dark-300">Published:</span>
@@ -511,7 +549,17 @@ const SingleEventPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-dark-300">Created By:</span>
-                  <span className="text-gray-900 dark:text-dark-100 font-mono text-xs">{event.createdBy}</span>
+                  <div className="text-right">
+                    <div className="text-gray-900 dark:text-dark-100 font-medium text-sm">
+                      {event.createdBy.firstName} {event.createdBy.lastName}
+                    </div>
+                    <div className="text-gray-600 dark:text-dark-300 text-xs">
+                      @{event.createdBy.username}
+                    </div>
+                    <div className="text-gray-500 dark:text-dark-400 text-xs">
+                      {event.createdBy.email}
+                    </div>
+                  </div>
                 </div>
                 {event.publishedBy && (
                   <div className="flex justify-between">

@@ -1,5 +1,7 @@
 import api from '../utils/api';
 
+import { EventCreator } from '../types';
+
 export interface EventPrice {
   currency: string;
   amount: number;
@@ -17,7 +19,7 @@ export interface ApiEvent {
   published: boolean;
   status: 'Past' | 'Live' | 'Upcoming';
   adminStatus: 'Pending' | 'Approved' | 'Rejected';
-  createdBy: string;
+  createdBy: EventCreator;
   haveBroadcastRoom: boolean;
   broadcastSoftware: string;
   scheduledTestDate?: string;
@@ -31,6 +33,7 @@ export interface ApiEvent {
   publishedBy?: string;
   eventDateTime: string;
   canWatchSavedStream?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface CreateEventData {
@@ -193,6 +196,14 @@ export const eventService = {
   // Unpublish an approved event
   unpublishEvent: async (id: string): Promise<{ message: string }> => {
     const response = await api.put(`/admin/events/unpublish/${id}`);
+    return response.data;
+  },
+
+  // Update event session (start/end stream)
+  updateEventSession: async (id: string, session: 'stream-start' | 'stream-end'): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/events/update-event-session/${id}`, {
+      session
+    });
     return response.data;
   }
 };
