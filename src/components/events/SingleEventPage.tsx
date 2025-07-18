@@ -438,7 +438,8 @@ const SingleEventPage: React.FC = () => {
                   )}
                   {event.adminStatus === 'Approved' && (
                     <>
-                      <button
+                      {event.status !== 'Past' && (
+                        <button
                         onClick={() => openConfirmationModal(event.status == 'Live' ? 'stream-end' : 'stream-start', event._id)}
                         disabled={actionLoading === event._id}
                         className="px-3 lg:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap flex items-center space-x-2"
@@ -446,6 +447,7 @@ const SingleEventPage: React.FC = () => {
                         <Activity className="w-4 h-4" />
                         <span>{actionLoading === event._id ? 'Processing...' : (event.status == 'Live' ? 'End Stream' : 'Start Stream')}</span>
                       </button>
+                      )}
                       <button
                         onClick={() => openConfirmationModal('unpublish', event._id)}
                         disabled={actionLoading === event._id}
