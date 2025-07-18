@@ -522,7 +522,8 @@ const EventsPage: React.FC = () => {
               
               {event.adminStatus === 'Approved' && (
                 <>
-                  <button
+                  {event.status !== 'Past' && (
+                    <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleStreamAction(event._id, event.status === 'Live' ? 'stream-end' : 'stream-start');
@@ -533,6 +534,7 @@ const EventsPage: React.FC = () => {
                     <Activity className="w-4 h-4 mr-3" />
                     {event.status === 'Live' ? 'Stop Streaming' : 'Start Streaming'}
                   </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
