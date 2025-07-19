@@ -4,8 +4,6 @@ import {
   TrendingUp, 
   Users, 
   AlertTriangle,
-  DollarSign,
-  Calendar,
   Play,
   CheckCircle
 } from 'lucide-react';
