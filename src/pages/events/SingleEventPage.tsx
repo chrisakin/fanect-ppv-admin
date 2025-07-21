@@ -684,7 +684,7 @@ const SingleEventPage: React.FC = () => {
                       <span className="text-gray-600 dark:text-dark-300 font-medium">IVS Ingest Endpoint:</span>
                     </div>
                     <span className="text-gray-900 dark:text-dark-100 text-xs font-mono break-all">
-                      {event.ivsIngestEndpoint}
+                      {`rtmps://${event.ivsIngestEndpoint}:443/app/`}
                     </span>
                   </div>
                 )}
