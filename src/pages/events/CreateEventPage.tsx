@@ -1,822 +1,852 @@
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "../../components/ui/dialog";
-import { X, UploadIcon, PlusIcon, TrashIcon } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Upload, X, Plus, Trash2, Calendar, Clock, DollarSign, Settings, FileText, Image, Video, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { eventService, CreateEventData, UpdateEventData } from '../../services/eventService';
+import { Currency } from '../../types/event';
 
-import { Currency, IPrice } from "../../types/event";
-import { CustomDatePicker } from "../../components/ui/custom-date-picker";
-import { CustomTimePicker } from "../../components/ui/custom-time-picker";
-import { useToast } from "../../components/ui/use-toast";
-
-interface EventModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  event?: any;
+interface EventPrice {
+  currency: Currency;
+  amount: number;
+  _id?: string;
 }
 
 interface FormData {
   name: string;
-  date: Date | null;
+  date: string;
   time: string;
   description: string;
-  prices: IPrice[];
-  haveBroadcastRoom: string;
+  prices: EventPrice[];
+  haveBroadcastRoom: boolean;
   broadcastSoftware: string;
-  scheduledTestDate: Date | null;
+  scheduledTestDate: string;
   bannerUrl: File | null;
   watermarkUrl: File | null;
   eventTrailer: File | null;
 }
 
 interface FormErrors {
-  name?: string;
-  date?: string;
-  time?: string;
-  description?: string;
-  prices?: string;
-  haveBroadcastRoom?: string;
-  broadcastSoftware?: string;
-  scheduledTestDate?: string;
-  bannerUrl?: string;
-  watermarkUrl?: string;
-  eventTrailer?: string;
+  [key: string]: string | undefined;
 }
 
-export const EventModal = ({ open, onOpenChange, event }: EventModalProps): JSX.Element => {
-  const [currentStep, setCurrentStep] = useState(1);
+interface FilePreview {
+  file: File | null;
+  preview: string;
+  type: 'image' | 'video';
+}
+
+const CreateEventPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = Boolean(id);
+  
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    date: null,
-    time: "",
-    description: "",
-    prices: [{ currency: Currency.NONE, amount: 0 }],
-    haveBroadcastRoom: "",
-    broadcastSoftware: "",
-    scheduledTestDate: null,
+    name: '',
+    date: '',
+    time: '',
+    description: '',
+    prices: [{ currency: Currency.USD, amount: 0 }],
+    haveBroadcastRoom: false,
+    broadcastSoftware: '',
+    scheduledTestDate: '',
     bannerUrl: null,
     watermarkUrl: null,
     eventTrailer: null,
   });
-  const [imagePreviews, setImagePreviews] = useState<{ [key: string]: string }>({});
+
   const [errors, setErrors] = useState<FormErrors>({});
+  const [filePreviews, setFilePreviews] = useState<{
+    bannerUrl?: FilePreview;
+    watermarkUrl?: FilePreview;
+    eventTrailer?: FilePreview;
+  }>({});
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { updateEvent, fetchMyEvents} = useEventStore();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  // Currency options
-  const currencies = Object.values(Currency);
-
+  // Load event data for editing
   useEffect(() => {
-    if (event) {
-      try {
-        const eventDate = event.date ? new Date(event.date) : null;
-        const scheduledDate = event.scheduledTestDate ? new Date(event.scheduledTestDate) : null;
-        setFormData({
-          name: event.name || "",
-          date: eventDate,
-          time: event.time || "",
-          description: event.description || "",
-          prices: event.prices || [{ currency: Currency.NONE, amount: Number(event.price) || 0 }],
-          haveBroadcastRoom: event.haveBroadcastRoom == true ? "yes" : "no" ,
-          broadcastSoftware: event.broadcastSoftware || "",
-          scheduledTestDate: scheduledDate,
-          bannerUrl: null,
-          watermarkUrl: null,
-          eventTrailer: null,
-        });
-        setImagePreviews({
-          bannerUrl: event.bannerUrl || "",
-          watermarkUrl: event.watermarkUrl || "",
-          eventTrailer: event.trailerUrl || "",
-        });
-      } catch (error) {
-        console.error('Error setting form data:', error);
+    const loadEvent = async () => {
+      if (isEditing && id) {
+        try {
+          setIsLoading(true);
+          const response = await eventService.getSingleEvent(id);
+          const event = response.results;
+          
+          setFormData({
+            name: event.name || '',
+            date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
+            time: event.time || '',
+            description: event.description || '',
+            prices: event.prices?.length > 0 ? event.prices : [{ currency: Currency.USD, amount: 0 }],
+            haveBroadcastRoom: event.haveBroadcastRoom || false,
+            broadcastSoftware: event.broadcastSoftware || '',
+            scheduledTestDate: event.scheduledTestDate ? new Date(event.scheduledTestDate).toISOString().split('T')[0] : '',
+            bannerUrl: null,
+            watermarkUrl: null,
+            eventTrailer: null,
+          });
+
+          // Set existing file previews
+          const previews: any = {};
+          if (event.bannerUrl) {
+            previews.bannerUrl = {
+              preview: event.bannerUrl,
+              type: 'image' as const,
+              file: null
+            };
+          }
+          if (event.watermarkUrl) {
+            previews.watermarkUrl = {
+              preview: event.watermarkUrl,
+              type: 'image' as const,
+              file: null
+            };
+          }
+          if (event.trailerUrl) {
+            previews.eventTrailer = {
+              preview: event.trailerUrl,
+              type: 'video' as const,
+              file: null
+            };
+          }
+          setFilePreviews(previews);
+        } catch (error: any) {
+          setApiError(error.response?.data?.message || 'Failed to load event');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEvent();
+  }, [id, isEditing]);
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Event name is required';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Event date is required';
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.date = 'Event date cannot be in the past';
       }
     }
-  }, [event]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    const key = id.replace('event-', '') as keyof FormData;
-    setFormData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    if (errors[key as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [key]: undefined,
-      }));
+    if (!formData.time) {
+      newErrors.time = 'Event time is required';
     }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Event description is required';
+    }
+
+    if (!formData.broadcastSoftware.trim()) {
+      newErrors.broadcastSoftware = 'Broadcast software information is required';
+    }
+
+    if (!formData.scheduledTestDate) {
+      newErrors.scheduledTestDate = 'Test stream date is required';
+    }
+
+    // Validate prices
+    const validPrices = formData.prices.filter(price => 
+      price.currency !== Currency.NONE && price.amount >= 0
+    );
+    if (validPrices.length === 0) {
+      newErrors.prices = 'At least one valid price is required';
+    }
+
+    // Validate files for new events
+    if (!isEditing) {
+      if (!formData.bannerUrl && !filePreviews.bannerUrl) {
+        newErrors.bannerUrl = 'Event banner is required';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSelectChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleInputChange = (field: keyof FormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
-  };
-
-
-  const handleDateChange = (field: 'date' | 'scheduledTestDate', date: string | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: date,
-    }));
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    }
-  };
-
-  const handleTimeChange = (time: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      time,
-    }));
-    if (errors.time) {
-      setErrors((prev) => ({
-        ...prev,
-        time: undefined,
-      }));
+    if (apiError) {
+      setApiError(null);
     }
   };
 
   const handlePriceChange = (index: number, field: 'currency' | 'amount', value: string | number) => {
-    setFormData((prev) => ({
-      ...prev,
-      prices: prev.prices.map((price, i) => 
-        i === index 
-          ? { ...price, [field]: field === 'amount' ? Number(value) : value }
-          : price
-      )
-    }));
-    if (errors.prices) {
-      setErrors((prev) => ({
-        ...prev,
-        prices: undefined,
-      }));
-    }
+    const newPrices = [...formData.prices];
+    newPrices[index] = {
+      ...newPrices[index],
+      [field]: field === 'amount' ? Number(value) : value
+    };
+    handleInputChange('prices', newPrices);
   };
 
   const addPrice = () => {
-    setFormData((prev) => ({
-      ...prev,
-      prices: [...prev.prices, { currency: Currency.NONE, amount: 0 }]
-    }));
+    const availableCurrencies = Object.values(Currency).filter(c => 
+      c !== Currency.NONE && !formData.prices.some(p => p.currency === c)
+    );
+    
+    if (availableCurrencies.length > 0) {
+      handleInputChange('prices', [...formData.prices, { 
+        currency: availableCurrencies[0], 
+        amount: 0 
+      }]);
+    }
   };
 
   const removePrice = (index: number) => {
     if (formData.prices.length > 1) {
-      setFormData((prev) => ({
+      const newPrices = formData.prices.filter((_, i) => i !== index);
+      handleInputChange('prices', newPrices);
+    }
+  };
+
+  const handleFileChange = (field: 'bannerUrl' | 'watermarkUrl' | 'eventTrailer', file: File | null) => {
+    if (!file) return;
+
+    const isVideo = field === 'eventTrailer';
+    const validType = isVideo ? file.type.startsWith('video/') : file.type.startsWith('image/');
+    
+    if (!validType) {
+      setErrors(prev => ({
         ...prev,
-        prices: prev.prices.filter((_, i) => i !== index)
+        [field]: isVideo ? 'Please upload a video file' : 'Please upload an image file'
+      }));
+      return;
+    }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: 'File size must be less than 10MB'
+      }));
+      return;
+    }
+
+    handleInputChange(field, file);
+
+    // Create preview
+    if (!isVideo) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFilePreviews(prev => ({
+          ...prev,
+          [field]: {
+            file,
+            preview: reader.result as string,
+            type: 'image'
+          }
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreviews(prev => ({
+        ...prev,
+        [field]: {
+          file,
+          preview: URL.createObjectURL(file),
+          type: 'video'
+        }
       }));
     }
-  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof FormData) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const isVideo = fieldName === 'eventTrailer';
-      const validType = isVideo ? file.type.startsWith('video/') : file.type.startsWith('image/');
-      
-      if (validType) {
-        setFormData((prev) => ({
-          ...prev,
-          [fieldName]: file,
-        }));
-        setErrors((prev) => ({
-          ...prev,
-          [fieldName]: undefined,
-        }));
-        
-        // Generate preview for images only
-        if (!isVideo) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setImagePreviews((prev) => ({
-              ...prev,
-              [fieldName]: reader.result as string,
-            }));
-          };
-          reader.readAsDataURL(file);
-        } else {
-          // For videos, just set a placeholder or file name
-          setImagePreviews((prev) => ({
-            ...prev,
-            [fieldName]: file.name,
-          }));
-        }
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          [fieldName]: isVideo ? "Please upload a video file" : "Please upload an image file",
-        }));
-      }
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const validateStep1 = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Event name is required";
-    }
-
-    if (!formData.date) {
-      newErrors.date = "Event date is required";
-    }
-
-    if (!formData.time) {
-      newErrors.time = "Event time is required";
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = "Event description is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep2 = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (formData.prices.length === 0 || formData.prices.some(p => p.amount <= 0)) {
-      newErrors.prices = "At least one valid price is required";
-    }
-
-    if (!formData.haveBroadcastRoom) {
-      newErrors.haveBroadcastRoom = "Please select if you have a broadcast room";
-    }
-
-    if (!formData.broadcastSoftware.trim()) {
-      newErrors.broadcastSoftware = "Broadcast software information is required";
-    }
-
-    if (!formData.scheduledTestDate) {
-      newErrors.scheduledTestDate = "Test stream date is required";
-    }
-
-    if (!event && !formData.bannerUrl) {
-      newErrors.bannerUrl = "Event banner is required";
-    }
-
-    // if (!event && !formData.watermarkUrl) {
-    //   newErrors.watermarkUrl = "Event watermark is required";
-    // }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleContinue = () => {
-    if (validateStep1()) {
-      setCurrentStep(2);
-    }
-  };
-
-  const handleBack = () => {
-    setCurrentStep(1);
+  const removeFile = (field: 'bannerUrl' | 'watermarkUrl' | 'eventTrailer') => {
+    handleInputChange(field, null);
+    setFilePreviews(prev => {
+      const newPreviews = { ...prev };
+      delete newPreviews[field];
+      return newPreviews;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    if (validateStep2()) {
-      try {
-        const formDataToSend = new FormData();
-        formDataToSend.append('name', formData.name);
-        
-        if (formData.date) {
-          formDataToSend.append('date', formData.date as unknown as string);
-        }
-        
-        formDataToSend.append('time', formData.time);
-        formDataToSend.append('description', formData.description);
-        formDataToSend.append('prices', JSON.stringify(formData.prices));
-        formDataToSend.append('haveBroadcastRoom', formData.haveBroadcastRoom);
-        formDataToSend.append('broadcastSoftware', formData.broadcastSoftware);
-        
-        if (formData.scheduledTestDate) {
-          formDataToSend.append('scheduledTestDate', formData.scheduledTestDate as unknown as string);
-        }
-        
-        if (formData.bannerUrl) {
-          formDataToSend.append('banner', formData.bannerUrl);
-        }
-        if (formData.watermarkUrl) {
-          formDataToSend.append('watermark', formData.watermarkUrl);
-        }
-        if (formData.eventTrailer) {
-          formDataToSend.append('trailer', formData.eventTrailer);
-        }
-
-        if (event) {
-          await updateEvent(event._id, formDataToSend);
-          toast({
-            title: "Success",
-            description: "Event updated successfully",
-          });
-        } else {
-          await axios.post('/events', formDataToSend, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          toast({
-            title: "Success",
-            description: "Event created successfully",
-          });
-        }
-        await fetchMyEvents()
-        onOpenChange(false);
-        setCurrentStep(1);
-        setFormData({
-          name: "",
-          date: null,
-          time: "",
-          description: "",
-          prices: [{ currency: Currency.NONE, amount: 0 }],
-          haveBroadcastRoom: "",
-          broadcastSoftware: "",
-          scheduledTestDate: null,
-          bannerUrl: null,
-          watermarkUrl: null,
-          eventTrailer: null,
-        });
-        setImagePreviews({});
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.response?.data?.message || "Failed to create event",
-        });
-      }
+    
+    if (!validateForm()) {
+      // Scroll to first error
+      const firstErrorField = Object.keys(errors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
 
-    setIsSubmitting(false);
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      const submitData: CreateEventData | UpdateEventData = {
+        name: formData.name,
+        date: formData.date,
+        time: formData.time,
+        description: formData.description,
+        prices: formData.prices.filter(price => price.currency !== Currency.NONE),
+        haveBroadcastRoom: formData.haveBroadcastRoom,
+        broadcastSoftware: formData.broadcastSoftware,
+        scheduledTestDate: formData.scheduledTestDate,
+        banner: formData.bannerUrl,
+        watermark: formData.watermarkUrl,
+        trailer: formData.eventTrailer,
+      };
+
+      if (isEditing && id) {
+        await eventService.updateEvent(id, submitData);
+      } else {
+        await eventService.createEvent(submitData);
+      }
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate('/events');
+      }, 2000);
+
+    } catch (error: any) {
+      setApiError(error.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    setCurrentStep(1);
-    setFormData({
-      name: "",
-      date: null,
-      time: "",
-      description: "",
-      prices: [{ currency: Currency.NONE, amount: 0 }],
-      haveBroadcastRoom: "",
-      broadcastSoftware: "",
-      scheduledTestDate: null,
-      bannerUrl: null,
-      watermarkUrl: null,
-      eventTrailer: null,
-    });
-    setImagePreviews({});
-    setErrors({});
-  };
+  const currencies = Object.values(Currency).filter(c => c !== Currency.NONE);
+  const availableCurrencies = currencies.filter(c => 
+    !formData.prices.some(p => p.currency === c)
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-dark-300">Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-[600px] h-[90vh] p-0 bg-background overflow-y-auto">
-        <form onSubmit={currentStep === 2 ? handleSubmit : (e) => e.preventDefault()}>
-          <Card className="w-full bg-gray-50 dark:!bg-[#02150C] rounded-[10px] border border-solid border-[#d5d7da] dark:border-[#1AAA65]">
-            <CardContent className="flex flex-col items-center p-0">
-              <DialogClose className="absolute right-4 top-4 z-10 focus-visible:outline-none">
-                <X className="h-4 w-4" />
-              </DialogClose>
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/events')}
+            className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium transition-colors duration-200 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Events</span>
+          </button>
+          
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">
+              {isEditing ? 'Edit Event' : 'Create New Event'}
+            </h1>
+            <p className="text-gray-600 dark:text-dark-300 mt-2">
+              {isEditing ? 'Update your event details below' : 'Fill in the details to create a new event'}
+            </p>
+          </div>
+        </div>
 
-              <div className="flex flex-col w-full max-w-[510px] items-center gap-[28px] py-[45px] px-6">
-                {/* Header Section */}
-                <div className="flex flex-col w-full max-w-[489px] items-center gap-[20px]">
-                  <div className="flex flex-col items-center w-full">
-                    <DialogTitle className="text-[40px] text-gray-800 dark:text-[#DDDDDD] text-center tracking-[var(--display-lg-semibold-letter-spacing)] leading-[var(--display-lg-semibold-line-height)]">
-                      {event ? 'Edit Event' : 'Organize Event'}
-                    </DialogTitle>
+        {/* Success Message */}
+        {showSuccess && (
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-3" />
+              <p className="text-green-800 dark:text-green-200">
+                Event {isEditing ? 'updated' : 'created'} successfully! Redirecting...
+              </p>
+            </div>
+          </div>
+        )}
 
-                    <DialogDescription className="font-display-xs-regular text-[#717680] dark:text-[#CCCCCC] text-[length:var(--display-xs-regular-font-size)] text-center tracking-[var(--display-xs-regular-letter-spacing)] leading-[var(--display-xs-regular-line-height)]">
-                      {event ? 'Update your event details' : 'Enter your event details to create an event'}
-                    </DialogDescription>
-                  </div>
-                  <p className="[font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-[#717680] dark:text-[#CCCCCC] text-lg tracking-[-0.36px]">
-                    Step {currentStep} of 2
-                  </p>
+        {/* Error Message */}
+        {apiError && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mr-3" />
+                <p className="text-red-800 dark:text-red-200">{apiError}</p>
+              </div>
+              <button
+                onClick={() => setApiError(null)}
+                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Information */}
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gray-50 dark:bg-dark-700/50">
+              <CardTitle className="flex items-center space-x-2 text-lg">
+                <FileText className="w-5 h-5 text-primary-600" />
+                <span>Basic Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="lg:col-span-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    Event Name *
+                  </label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Enter a compelling event name"
+                    className={`${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.name}
+                    </p>
+                  )}
                 </div>
 
-                {/* Step 1: Basic Information */}
-                {currentStep === 1 && (
-                  <>
-                    {/* Form Fields */}
-                    <div className="flex flex-col items-start gap-6 w-full">
-                      {/* Event Name Field */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Name
-                        </label>
-                        <div className="relative w-full">
-                          <Input
-                            id="name"
-                            className="h-[50px] px-3.5 py-2.5  dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-[#2E483A] [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
-                            placeholder="Enter event name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            disabled={isSubmitting}
-                          />
-                        </div>
-                        {errors.name && (
-                          <span className="text-xs text-red-500">{errors.name}</span>
-                        )}
-                      </div>
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Event Date *
+                  </label>
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => handleInputChange('date', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={`${errors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.date && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.date}
+                    </p>
+                  )}
+                </div>
 
-                      {/* Event Date Field */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Date
-                        </label>
-                        <CustomDatePicker
-                          value={formData.date}
-                          onChange={(date) => handleDateChange('date', date as unknown as string)}
-                          placeholder="Select event date"
-                          disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
-                        />
-                        {errors.date && (
-                          <span className="text-xs text-red-500">{errors.date}</span>
-                        )}
-                      </div>
+                <div>
+                  <label htmlFor="time" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    <Clock className="w-4 h-4 inline mr-1" />
+                    Event Time *
+                  </label>
+                  <Input
+                    id="time"
+                    name="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => handleInputChange('time', e.target.value)}
+                    className={`${errors.time ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.time && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.time}
+                    </p>
+                  )}
+                </div>
 
-                      {/* Event Time Field */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Time
-                        </label>
-                        <CustomTimePicker
-                          value={formData.time}
-                          onChange={handleTimeChange}
-                          placeholder="Select event time"
-                          disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
-                        />
-                        {errors.time && (
-                          <span className="text-xs text-red-500">{errors.time}</span>
-                        )}
-                      </div>
-
-                      {/* Event Description Field */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Description
-                        </label>
-                        <Textarea
-                          id="description"
-                          className="h-[174px] px-3.5 pt-5 pb-2.5 bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px] resize-none"
-                          placeholder="Enter event description. You can use line breaks for paragraphs and format your text as needed."
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          disabled={isSubmitting}
-                          style={{ whiteSpace: 'pre-wrap' }}
-                        />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Tip: Use line breaks to create paragraphs. Your formatting will be preserved.
-                        </p>
-                        {errors.description && (
-                          <span className="text-xs text-red-500">{errors.description}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Continue Button */}
-                    <div className="flex flex-col items-center w-full">
-                      <Button 
-                        type="button"
-                        onClick={handleContinue}
-                        className="h-[50px] w-full bg-green-600 rounded-[10px] font-text-lg-semibold text-white text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)] hover:bg-green-700"
-                        disabled={isSubmitting}
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                {/* Step 2: Pricing and Media Upload */}
-                {currentStep === 2 && (
-                  <>
-                    {/* Form Fields */}
-                    <div className="flex flex-col items-start gap-6 w-full">
-                      {/* Event Pricing */}
-                      <div className="flex flex-col items-start gap-4 w-full">
-                        <div className="flex items-center justify-between w-full">
-                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                            Event Pricing
-                          </h3>
-                          {/* <Button
-                            type="button"
-                            onClick={addPrice}
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-2"
-                          >
-                            <PlusIcon className="w-4 h-4" />
-                            Add Currency
-                          </Button> */}
-                        </div>
-                        
-                        {formData.prices.map((price, index) => (
-                          <div key={index} className="flex items-start gap-2 w-full">
-                            <div className="w-[120px] h-[50px] flex items-center bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600">
-                              {/* <Input
-                                value={price.currency}
-                                disabled
-                                className="w-full h-full border-0 bg-transparent text-center font-medium"
-                              /> */}
-                              <Select value={price.currency} onValueChange={(value) => handlePriceChange(index, "currency", value)}>
-                              <SelectTrigger className="w-full h-full border-0 bg-transparent cursor-pointer">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="cursor-pointer dark:!bg-[#FFFFFF]">
-                                {currencies.map((currency) => {
-                                  const isSelected = formData.prices.some(
-                                    (p, i) => p.currency === currency && i !== index
-                                  );
-                                  return (
-                                    <SelectItem
-                                      key={currency}
-                                      value={currency}
-                                      disabled={isSelected}
-                                      className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]"
-                                    >
-                                      {currency}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                            </div>
-
-                            <div className="flex-1 h-[50px] bg-gray-50 dark:bg-[#13201A] rounded-lg">
-                              <div className="flex items-center justify-between  h-full">
-                                {/* <Input
-                                  type="number"
-                                  className="!border-0 bg-gray-50 dark:bg-[#13201A] text-gray-700 dark:text-gray-200 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px] shadow-none p-0 h-full focus:!outline-none focus:!ring-0 focus-visible:!outline-none !appearance-none"
-                                  placeholder="Enter amount"
-                                  value={price.amount|| ''}
-                                  onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
-                                  disabled={isSubmitting}
-                                /> */}
-                                 <Input
-                                  id="amount"
-                                  type="number"
-                                  className="h-[50px] px-3.5 py-2.5  dark:bg-[#13201A] rounded-lg [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
-                                  placeholder="Enter amount"
-                                  value={price.amount|| ''}
-                                  onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
-                                  disabled={isSubmitting}
-                                  />
-                              </div>
-                            </div>
-
-                            {formData.prices.length > 1 && (
-                              <Button
-                                type="button"
-                                onClick={() => removePrice(index)}
-                                variant="outline"
-                                size="sm"
-                                className="h-[50px] w-[60px] p-0 border-red-300 text-red-500 hover:bg-red-50"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                        
-                        {errors.prices && (
-                          <span className="text-xs text-red-500">{errors.prices}</span>
-                        )}
-                      </div>
-
-                      {/* Broadcast Room Question */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Do you have a broadcast room?
-                        </h3>
-
-                        <Select value={formData.haveBroadcastRoom} onValueChange={(value) => handleSelectChange('haveBroadcastRoom', value)}>
-                          <SelectTrigger className="h-[50px] bg-gray-50 dark:bg-[#13201A] border-[#d5d7da] dark:border-gray-600 w-full cursor-pointer">
-                            <SelectValue placeholder="Select answer" />
-                          </SelectTrigger>
-                          <SelectContent className="cursor-pointer dark:!bg-[#FFFFFF]">
-                            <SelectItem className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]" value="yes">Yes</SelectItem>
-                            <SelectItem className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]"  value="no">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.haveBroadcastRoom && (
-                          <span className="text-xs text-red-500">{errors.haveBroadcastRoom}</span>
-                        )}
-                      </div>
-
-                      {/* Broadcast Software */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          What broadcast software will you be using?
-                        </h3>
-
-                        <Textarea
-                          id="broadcastSoftware"
-                          className="h-[94px] bg-gray-50 dark:bg-[#13201A] border-[#d5d7da] dark:border-gray-600 rounded-lg pt-5 pb-2.5 px-3.5 text-gray-700 dark:text-gray-200 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px] resize-none"
-                          placeholder="Enter answer"
-                          value={formData.broadcastSoftware}
-                          onChange={handleInputChange}
-                          disabled={isSubmitting}
-                        />
-                        {errors.broadcastSoftware && (
-                          <span className="text-xs text-red-500">{errors.broadcastSoftware}</span>
-                        )}
-                      </div>
-
-                      {/* Test Stream Date */}
-                      <div className="flex flex-col items-start gap-1.5 w-full">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Schedule Test Stream with FaNect Support
-                        </h3>
-
-                        <CustomDatePicker
-                          value={formData.scheduledTestDate}
-                          onChange={(date) => handleDateChange('scheduledTestDate', date as unknown as string)}
-                          placeholder="Select test stream date"
-                          disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
-                        />
-                        {errors.scheduledTestDate && (
-                          <span className="text-xs text-red-500">{errors.scheduledTestDate}</span>
-                        )}
-                      </div>
-
-                      {/* Event Banner Upload */}
-                      <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Banner
-                        </h3>
-
-                        <label htmlFor="bannerUrl" className="cursor-pointer w-full">
-                          <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
-                            <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
-                              {imagePreviews.bannerUrl ? (
-                                <img
-                                  src={imagePreviews.bannerUrl}
-                                  alt="Banner Preview"
-                                  className="w-full h-[120px] object-contain rounded"
-                                />
-                              ) : (
-                                <>
-                                  <UploadIcon className="w-6 h-6 text-green-600" />
-                                  <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
-                                    Upload event banner
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <input
-                            id="bannerUrl"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileChange(e, 'bannerUrl')}
-                            disabled={isSubmitting}
-                          />
-                        </label>
-                        {errors.bannerUrl && (
-                          <span className="text-xs text-red-500">{errors.bannerUrl}</span>
-                        )}
-                      </div>
-
-                      {/* Event Watermark Upload */}
-                      <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Custom Watermark (this could be your logo)
-                        </h3>
-
-                        <label htmlFor="watermarkUrl" className="cursor-pointer w-full">
-                          <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
-                            <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
-                              {imagePreviews.watermarkUrl ? (
-                                <img
-                                  src={imagePreviews.watermarkUrl}
-                                  alt="Watermark Preview"
-                                  className="w-full h-[120px] object-contain rounded"
-                                />
-                              ) : (
-                                <>
-                                  <UploadIcon className="w-6 h-6 text-green-600" />
-                                  <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
-                                    Upload watermark
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <input
-                            id="watermarkUrl"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileChange(e, 'watermarkUrl')}
-                            disabled={isSubmitting}
-                          />
-                        </label>
-                        {errors.watermarkUrl && (
-                          <span className="text-xs text-red-500">{errors.watermarkUrl}</span>
-                        )}
-                      </div>
-
-                      {/* Event Trailer Upload */}
-                      <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
-                        <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
-                          Event Trailer
-                        </h3>
-
-                        <label htmlFor="eventTrailer" className="cursor-pointer w-full">
-                          <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
-                            <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
-                              {imagePreviews.eventTrailer ? (
-                                <div className="flex flex-col items-center gap-2">
-                                  <UploadIcon className="w-6 h-6 text-green-600" />
-                                  <span className="text-green-600 text-xs text-center">
-                                    {imagePreviews.eventTrailer}
-                                  </span>
-                                </div>
-                              ) : (
-                                <>
-                                  <UploadIcon className="w-6 h-6 text-green-600" />
-                                  <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
-                                    Upload event trailer
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <input
-                            id="eventTrailer"
-                            type="file"
-                            accept="video/*"
-                            className="hidden"
-                            onChange={(e) => handleFileChange(e, 'eventTrailer')}
-                            disabled={isSubmitting}
-                          />
-                        </label>
-                        {errors.eventTrailer && (
-                          <span className="text-xs text-red-500">{errors.eventTrailer}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col items-center gap-4 w-full">
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="h-[50px] w-full bg-green-600 rounded-[10px] font-text-lg-semibold text-white text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)] hover:bg-green-700"
-                      >
-                        {isSubmitting ? 
-                          (event ? "Updating Event..." : "Creating Event...") : 
-                          (event ? "Update Event" : "Create Event")
-                        }
-                      </Button>
-                      
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleBack}
-                        disabled={isSubmitting}
-                        className="h-[50px] w-full border-[#d5d7da] dark:border-gray-600 rounded-[10px] font-text-lg-semibold text-gray-700 dark:text-gray-200 text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)]"
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </>
-                )}
+                <div className="lg:col-span-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    Event Description *
+                  </label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Provide a detailed description of your event. What can attendees expect?"
+                    rows={5}
+                    className={`${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} resize-none`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.description && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Pricing */}
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gray-50 dark:bg-dark-700/50">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-lg">
+                  <DollarSign className="w-5 h-5 text-primary-600" />
+                  <span>Pricing</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addPrice}
+                  disabled={availableCurrencies.length === 0 || isSubmitting}
+                  className="flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Currency</span>
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {formData.prices.map((price, index) => (
+                <div key={index} className="flex items-end space-x-4 p-4 border border-gray-200 dark:border-dark-700 rounded-lg bg-gray-50 dark:bg-dark-700/30">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                      Currency
+                    </label>
+                    <Select
+                      value={price.currency}
+                      onValueChange={(value) => handlePriceChange(index, 'currency', value)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((currency) => {
+                          const isUsed = formData.prices.some((p, i) => p.currency === currency && i !== index);
+                          return (
+                            <SelectItem 
+                              key={currency} 
+                              value={currency}
+                              disabled={isUsed}
+                            >
+                              {currency} {isUsed && '(Already used)'}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                      Amount
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={price.amount}
+                      onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
+                      placeholder="0.00"
+                      className="h-12"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  {formData.prices.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removePrice(index)}
+                      className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 h-12 px-3"
+                      disabled={isSubmitting}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {errors.prices && (
+                <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.prices}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Technical Details */}
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gray-50 dark:bg-dark-700/50">
+              <CardTitle className="flex items-center space-x-2 text-lg">
+                <Settings className="w-5 h-5 text-primary-600" />
+                <span>Technical Details</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    Do you have a broadcast room? *
+                  </label>
+                  <Select
+                    value={formData.haveBroadcastRoom ? 'yes' : 'no'}
+                    onValueChange={(value) => handleInputChange('haveBroadcastRoom', value === 'yes')}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes, I have a broadcast room</SelectItem>
+                      <SelectItem value="no">No, I need assistance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label htmlFor="scheduledTestDate" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    Test Stream Date *
+                  </label>
+                  <Input
+                    id="scheduledTestDate"
+                    name="scheduledTestDate"
+                    type="date"
+                    value={formData.scheduledTestDate}
+                    onChange={(e) => handleInputChange('scheduledTestDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={`${errors.scheduledTestDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.scheduledTestDate && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.scheduledTestDate}
+                    </p>
+                  )}
+                </div>
+
+                <div className="lg:col-span-2">
+                  <label htmlFor="broadcastSoftware" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                    Broadcast Software Details *
+                  </label>
+                  <Textarea
+                    id="broadcastSoftware"
+                    name="broadcastSoftware"
+                    value={formData.broadcastSoftware}
+                    onChange={(e) => handleInputChange('broadcastSoftware', e.target.value)}
+                    placeholder="Please describe the broadcast software you'll be using (e.g., OBS Studio, XSplit, etc.) and any specific setup requirements..."
+                    rows={4}
+                    className={`${errors.broadcastSoftware ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} resize-none`}
+                    disabled={isSubmitting}
+                  />
+                  {errors.broadcastSoftware && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.broadcastSoftware}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Media Upload */}
+          <Card className="shadow-sm">
+            <CardHeader className="bg-gray-50 dark:bg-dark-700/50">
+              <CardTitle className="flex items-center space-x-2 text-lg">
+                <Image className="w-5 h-5 text-primary-600" />
+                <span>Media Files</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-8">
+              {/* Banner Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-3">
+                  Event Banner {!isEditing && '*'}
+                  <span className="text-gray-500 text-xs ml-2">(Recommended: 1920x1080px, Max: 10MB)</span>
+                </label>
+                <div className="relative">
+                  <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    errors.bannerUrl ? 'border-red-300 bg-red-50 dark:bg-red-900/10' : 'border-gray-300 dark:border-dark-600 hover:border-primary-500'
+                  }`}>
+                    {filePreviews.bannerUrl ? (
+                      <div className="relative">
+                        <img
+                          src={filePreviews.bannerUrl.preview}
+                          alt="Banner preview"
+                          className="max-h-64 mx-auto rounded-lg shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFile('bannerUrl')}
+                          className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-colors"
+                          disabled={isSubmitting}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">Upload Event Banner</p>
+                        <p className="text-sm text-gray-500 dark:text-dark-400">
+                          Drag and drop your banner image here, or click to browse
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileChange('bannerUrl', e.target.files?.[0] || null)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {errors.bannerUrl && (
+                    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {errors.bannerUrl}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Watermark Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-3">
+                  Custom Watermark (Optional)
+                  <span className="text-gray-500 text-xs ml-2">(Your logo or brand mark, Max: 10MB)</span>
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+                  {filePreviews.watermarkUrl ? (
+                    <div className="relative">
+                      <img
+                        src={filePreviews.watermarkUrl.preview}
+                        alt="Watermark preview"
+                        className="max-h-32 mx-auto rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFile('watermarkUrl')}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600 dark:text-dark-300 mb-1">Upload Watermark</p>
+                      <p className="text-xs text-gray-500 dark:text-dark-400">PNG recommended for transparency</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange('watermarkUrl', e.target.files?.[0] || null)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Trailer Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-3">
+                  <Video className="w-4 h-4 inline mr-1" />
+                  Event Trailer (Optional)
+                  <span className="text-gray-500 text-xs ml-2">(Preview video for your event, Max: 10MB)</span>
+                </label>
+                <div className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+                  {filePreviews.eventTrailer ? (
+                    <div className="relative">
+                      <video
+                        src={filePreviews.eventTrailer.preview}
+                        controls
+                        className="max-h-64 mx-auto rounded-lg shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFile('eventTrailer')}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-colors"
+                        disabled={isSubmitting}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600 dark:text-dark-300 mb-1">Upload Event Trailer</p>
+                      <p className="text-xs text-gray-500 dark:text-dark-400">MP4, MOV, or AVI format</p>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleFileChange('eventTrailer', e.target.files?.[0] || null)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/events')}
+                disabled={isSubmitting}
+                className="sm:w-auto w-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="sm:w-auto w-full min-w-[140px] bg-primary-600 hover:bg-primary-700"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isEditing ? 'Updating...' : 'Creating...'}</span>
+                  </div>
+                ) : (
+                  <span>{isEditing ? 'Update Event' : 'Create Event'}</span>
+                )}
+              </Button>
+            </div>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
+
+export default CreateEventPage;

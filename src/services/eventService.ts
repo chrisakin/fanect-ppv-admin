@@ -47,9 +47,9 @@ export interface CreateEventData {
   haveBroadcastRoom: boolean;
   broadcastSoftware: string;
   scheduledTestDate?: string;
-  banner?: File;
-  watermark?: File;
-  trailer?: File;
+  banner?: File | null;
+  watermark?: File | null;
+  trailer?: File | null;
 }
 
 export interface UpdateEventData extends CreateEventData {
