@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload, Trash2, Plus, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "../../components/ui/dialog";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { useToast } from "../../components/ui/use-toast";
+import { CustomDatePicker } from "../../components/ui/custom-date-picker";
+import { CustomTimePicker } from "../../components/ui/custom-time-picker";
 import { eventService, CreateEventData, UpdateEventData } from '../../services/eventService';
-
-interface EventPrice {
-  currency: string;
-  amount: number;
-}
+import { Currency, IPrice } from '../../types/event';
 
 interface FormData {
   name: string;
-  date: string;
+  date: Date | null;
   time: string;
   description: string;
-  prices: EventPrice[];
+  prices: IPrice[];
   haveBroadcastRoom: string;
   broadcastSoftware: string;
-  scheduledTestDate: string;
-  bannerUrl?: File;
-  watermarkUrl?: File;
-  eventTrailer?: File;
+  scheduledTestDate: Date | null;
+  bannerUrl: File | null;
+  watermarkUrl: File | null;
+  eventTrailer: File | null;
 }
 
 interface FormErrors {
@@ -42,8 +47,6 @@ interface ImagePreviews {
   watermarkUrl?: string;
   eventTrailer?: string;
 }
-
-const currencies = ['USD', 'NGN', 'EUR', 'GBP'];
 
 // Success Alert Component
 interface SuccessAlertProps {
@@ -86,7 +89,9 @@ const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+  const { toast } = useToast();
   
+  const [open, setOpen] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,16 +108,22 @@ const CreateEventPage: React.FC = () => {
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    date: '',
+    date: null,
     time: '',
     description: '',
-    prices: [{ currency: 'USD', amount: 0 }],
+    prices: [{ currency: Currency.USD, amount: 0 }],
     haveBroadcastRoom: '',
     broadcastSoftware: '',
-    scheduledTestDate: '',
+    scheduledTestDate: null,
+    bannerUrl: null,
+    watermarkUrl: null,
+    eventTrailer: null,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Currency options - Flutterwave accepted currencies
+  const currencies = Object.values(Currency).filter(currency => currency !== Currency.NONE);
 
   // Load event data for editing
   useEffect(() => {
@@ -127,21 +138,29 @@ const CreateEventPage: React.FC = () => {
       const response = await eventService.getSingleEvent(eventId);
       const event = response.results;
       
+      const eventDate = event.date ? new Date(event.date) : null;
+      const scheduledDate = event.scheduledTestDate ? new Date(event.scheduledTestDate) : null;
+      
       setFormData({
-        name: event.name,
-        date: event.date,
-        time: event.time,
-        description: event.description,
-        prices: event.prices.length > 0 ? event.prices : [{ currency: 'USD', amount: 0 }],
+        name: event.name || '',
+        date: eventDate,
+        time: event.time || '',
+        description: event.description || '',
+        prices: event.prices && event.prices.length > 0 ? event.prices : [{ currency: Currency.USD, amount: 0 }],
         haveBroadcastRoom: event.haveBroadcastRoom ? 'yes' : 'no',
-        broadcastSoftware: event.broadcastSoftware,
-        scheduledTestDate: event.scheduledTestDate || '',
+        broadcastSoftware: event.broadcastSoftware || '',
+        scheduledTestDate: scheduledDate,
+        bannerUrl: null,
+        watermarkUrl: null,
+        eventTrailer: null,
       });
 
       // Set image previews if URLs exist
-      if (event.bannerUrl) {
-        setImagePreviews(prev => ({ ...prev, bannerUrl: event.bannerUrl }));
-      }
+      setImagePreviews({
+        bannerUrl: event.bannerUrl || '',
+        watermarkUrl: event.watermarkUrl || '',
+        eventTrailer: event.trailerUrl || '',
+      });
     } catch (error: any) {
       setErrors({ general: error.response?.data?.message || 'Failed to load event data' });
     } finally {
@@ -149,7 +168,147 @@ const CreateEventPage: React.FC = () => {
     }
   };
 
-  // Validation functions
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    const key = id.replace('event-', '') as keyof FormData;
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+    if (errors[key as keyof FormErrors]) {
+      setErrors((prev) => ({
+        ...prev,
+        [key]: undefined,
+      }));
+    }
+  };
+
+  const handleSelectChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
+  };
+
+  const handleDateChange = (field: 'date' | 'scheduledTestDate', date: Date | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: date,
+    }));
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
+  };
+
+  const handleTimeChange = (time: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      time,
+    }));
+    if (errors.time) {
+      setErrors((prev) => ({
+        ...prev,
+        time: undefined,
+      }));
+    }
+  };
+
+  const handlePriceChange = (index: number, field: 'currency' | 'amount', value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      prices: prev.prices.map((price, i) => 
+        i === index 
+          ? { ...price, [field]: field === 'amount' ? Number(value) : value }
+          : price
+      )
+    }));
+    if (errors.prices) {
+      setErrors((prev) => ({
+        ...prev,
+        prices: undefined,
+      }));
+    }
+  };
+
+  const addPrice = () => {
+    const availableCurrencies = currencies.filter(
+      currency => !formData.prices.some(price => price.currency === currency)
+    );
+    
+    if (availableCurrencies.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        prices: [...prev.prices, { currency: availableCurrencies[0], amount: 0 }]
+      }));
+    }
+  };
+
+  const removePrice = (index: number) => {
+    if (formData.prices.length > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        prices: prev.prices.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof FormData) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, [fieldName]: 'File size must be less than 5MB' }));
+        return;
+      }
+
+      const isVideo = fieldName === 'eventTrailer';
+      const validType = isVideo ? file.type.startsWith('video/') : file.type.startsWith('image/');
+      
+      if (validType) {
+        setFormData((prev) => ({
+          ...prev,
+          [fieldName]: file,
+        }));
+        setErrors((prev) => ({
+          ...prev,
+          [fieldName]: undefined,
+        }));
+        
+        // Generate preview for images only
+        if (!isVideo) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagePreviews((prev) => ({
+              ...prev,
+              [fieldName]: reader.result as string,
+            }));
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // For videos, just set a placeholder or file name
+          setImagePreviews((prev) => ({
+            ...prev,
+            [fieldName]: file.name,
+          }));
+        }
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          [fieldName]: isVideo ? "Please upload a video file" : "Please upload an image file",
+        }));
+      }
+    }
+  };
+
   const validateStep1 = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -221,7 +380,7 @@ const CreateEventPage: React.FC = () => {
 
     if (formData.scheduledTestDate) {
       const testDate = new Date(formData.scheduledTestDate);
-      const eventDate = new Date(formData.date);
+      const eventDate = new Date(formData.date!);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -236,124 +395,6 @@ const CreateEventPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Input handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[id as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [id]: undefined }));
-    }
-  };
-
-  const handleDateChange = (field: 'date' | 'scheduledTestDate', value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user changes date
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleTimeChange = (value: string) => {
-    setFormData(prev => ({ ...prev, time: value }));
-    
-    // Clear error when user changes time
-    if (errors.time) {
-      setErrors(prev => ({ ...prev, time: undefined }));
-    }
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user makes selection
-    if (errors[field as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handlePriceChange = (index: number, field: 'currency' | 'amount', value: string) => {
-    const newPrices = [...formData.prices];
-    if (field === 'amount') {
-      newPrices[index] = { ...newPrices[index], [field]: parseFloat(value) || 0 };
-    } else {
-      newPrices[index] = { ...newPrices[index], [field]: value };
-    }
-    setFormData(prev => ({ ...prev, prices: newPrices }));
-    
-    // Clear price errors
-    if (errors.prices) {
-      setErrors(prev => ({ ...prev, prices: undefined }));
-    }
-  };
-
-  const addPrice = () => {
-    const availableCurrencies = currencies.filter(
-      currency => !formData.prices.some(price => price.currency === currency)
-    );
-    
-    if (availableCurrencies.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        prices: [...prev.prices, { currency: availableCurrencies[0], amount: 0 }]
-      }));
-    }
-  };
-
-  const removePrice = (index: number) => {
-    if (formData.prices.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        prices: prev.prices.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'bannerUrl' | 'watermarkUrl' | 'eventTrailer') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, [field]: 'File size must be less than 5MB' }));
-        return;
-      }
-
-      // Validate file type
-      if (field === 'eventTrailer') {
-        if (!file.type.startsWith('video/')) {
-          setErrors(prev => ({ ...prev, [field]: 'Please select a valid video file' }));
-          return;
-        }
-      } else {
-        if (!file.type.startsWith('image/')) {
-          setErrors(prev => ({ ...prev, [field]: 'Please select a valid image file' }));
-          return;
-        }
-      }
-
-      setFormData(prev => ({ ...prev, [field]: file }));
-      
-      // Create preview for images
-      if (field !== 'eventTrailer') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreviews(prev => ({ ...prev, [field]: e.target?.result as string }));
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setImagePreviews(prev => ({ ...prev, [field]: file.name }));
-      }
-
-      // Clear error
-      if (errors[field]) {
-        setErrors(prev => ({ ...prev, [field]: undefined }));
-      }
-    }
-  };
-
-  // Step navigation
   const handleContinue = () => {
     if (validateStep1()) {
       setCurrentStep(2);
@@ -364,57 +405,72 @@ const CreateEventPage: React.FC = () => {
     setCurrentStep(1);
   };
 
-  // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateStep2()) {
-      return;
-    }
-
     setIsSubmitting(true);
-    setErrors({});
 
-    try {
-      const eventData: CreateEventData | UpdateEventData = {
-        name: formData.name.trim(),
-        date: formData.date,
-        time: formData.time,
-        description: formData.description.trim(),
-        prices: formData.prices.filter(price => price.amount >= 0),
-        haveBroadcastRoom: formData.haveBroadcastRoom === 'yes',
-        broadcastSoftware: formData.broadcastSoftware.trim(),
-        scheduledTestDate: formData.scheduledTestDate || undefined,
-        bannerUrl: formData.bannerUrl,
-        watermarkUrl: formData.watermarkUrl,
-        eventTrailer: formData.eventTrailer,
-      };
+    if (validateStep2()) {
+      try {
+        const eventData: CreateEventData | UpdateEventData = {
+          name: formData.name.trim(),
+          date: formData.date!.toISOString().split('T')[0],
+          time: formData.time,
+          description: formData.description.trim(),
+          prices: formData.prices.filter(price => price.amount >= 0),
+          haveBroadcastRoom: formData.haveBroadcastRoom === 'yes',
+          broadcastSoftware: formData.broadcastSoftware.trim(),
+          scheduledTestDate: formData.scheduledTestDate?.toISOString().split('T')[0],
+          bannerUrl: formData.bannerUrl,
+          watermarkUrl: formData.watermarkUrl,
+          eventTrailer: formData.eventTrailer,
+        };
 
-      let response;
-      if (isEditMode && id) {
-        response = await eventService.updateEvent(id, eventData as UpdateEventData);
-      } else {
-        response = await eventService.createEvent(eventData as CreateEventData);
-      }
+        let response;
+        if (isEditMode && id) {
+          response = await eventService.updateEvent(id, eventData as UpdateEventData);
+        } else {
+          response = await eventService.createEvent(eventData as CreateEventData);
+        }
 
-      // Show success alert
-      setSuccessAlert({
-        isOpen: true,
-        message: response.message || `Event ${isEditMode ? 'updated' : 'created'} successfully!`
-      });
+        toast({
+          title: "Success",
+          description: response.message || `Event ${isEditMode ? 'updated' : 'created'} successfully!`,
+        });
 
-      // Navigate back to events list after a short delay
-      setTimeout(() => {
+        handleClose();
         navigate('/events');
-      }, 2000);
 
-    } catch (error: any) {
-      setErrors({ 
-        general: error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} event. Please try again.` 
-      });
-    } finally {
-      setIsSubmitting(false);
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} event`,
+        });
+      }
     }
+
+    setIsSubmitting(false);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setCurrentStep(1);
+    setFormData({
+      name: '',
+      date: null,
+      time: '',
+      description: '',
+      prices: [{ currency: Currency.USD, amount: 0 }],
+      haveBroadcastRoom: '',
+      broadcastSoftware: '',
+      scheduledTestDate: null,
+      bannerUrl: null,
+      watermarkUrl: null,
+      eventTrailer: null,
+    });
+    setImagePreviews({});
+    setErrors({});
+    navigate('/events');
   };
 
   if (loading) {
@@ -426,470 +482,428 @@ const CreateEventPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate('/events')}
-          className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium transition-colors duration-200"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Back to Events</span>
-        </button>
-      </div>
-
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="w-full max-w-[600px] h-[90vh] p-0 bg-background overflow-y-auto">
           <form onSubmit={currentStep === 2 ? handleSubmit : (e) => e.preventDefault()}>
-            <div className="p-6 lg:p-8">
-              {/* Header Section */}
-              <div className="text-center mb-8">
-                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-dark-100 mb-2">
-                  {isEditMode ? 'Edit Event' : 'Create Event'}
-                </h1>
-                <p className="text-gray-600 dark:text-dark-300">
-                  {isEditMode ? 'Update your event details' : 'Enter your event details to create an event'}
-                </p>
-                <p className="text-gray-500 dark:text-dark-400 mt-2">
-                  Step {currentStep} of 2
-                </p>
-              </div>
+            <Card className="w-full bg-gray-50 dark:!bg-[#02150C] rounded-[10px] border border-solid border-[#d5d7da] dark:border-[#1AAA65]">
+              <CardContent className="flex flex-col items-center p-0">
+                <DialogClose className="absolute right-4 top-4 z-10 focus-visible:outline-none">
+                  <X className="h-4 w-4" />
+                </DialogClose>
 
-              {/* Error Message */}
-              {errors.general && (
-                <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                  <p className="text-red-600 dark:text-red-400 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    {errors.general}
-                  </p>
-                </div>
-              )}
+                <div className="flex flex-col w-full max-w-[510px] items-center gap-[28px] py-[45px] px-6">
+                  {/* Header Section */}
+                  <div className="flex flex-col w-full max-w-[489px] items-center gap-[20px]">
+                    <div className="flex flex-col items-center w-full">
+                      <DialogTitle className="text-[40px] text-gray-800 dark:text-[#DDDDDD] text-center tracking-[var(--display-lg-semibold-letter-spacing)] leading-[var(--display-lg-semibold-line-height)]">
+                        {isEditMode ? 'Edit Event' : 'Create Event'}
+                      </DialogTitle>
 
-              {/* Step 1: Basic Information */}
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  {/* Event Name */}
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Event Name *
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 ${
-                        errors.name ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                      placeholder="Enter event name"
-                    />
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
-                    )}
-                  </div>
-
-                  {/* Event Date */}
-                  <div>
-                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Event Date *
-                    </label>
-                    <input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => handleDateChange('date', e.target.value)}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200 ${
-                        errors.date ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                    />
-                    {errors.date && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.date}</p>
-                    )}
-                  </div>
-
-                  {/* Event Time */}
-                  <div>
-                    <label htmlFor="time" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Event Time *
-                    </label>
-                    <input
-                      id="time"
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => handleTimeChange(e.target.value)}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200 ${
-                        errors.time ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                    />
-                    {errors.time && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.time}</p>
-                    )}
-                  </div>
-
-                  {/* Event Description */}
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Event Description *
-                    </label>
-                    <textarea
-                      id="description"
-                      rows={6}
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 resize-none ${
-                        errors.description ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                      placeholder="Enter event description. You can use line breaks for paragraphs and format your text as needed."
-                      style={{ whiteSpace: 'pre-wrap' }}
-                    />
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      Tip: Use line breaks to create paragraphs. Your formatting will be preserved.
-                    </p>
-                    {errors.description && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
-                    )}
-                  </div>
-
-                  {/* Continue Button */}
-                  <div className="pt-4">
-                    <button
-                      type="button"
-                      onClick={handleContinue}
-                      disabled={isSubmitting}
-                      className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Pricing and Additional Details */}
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  {/* Event Pricing */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100">
-                        Event Pricing
-                      </h3>
-                      {formData.prices.length < currencies.length && (
-                        <button
-                          type="button"
-                          onClick={addPrice}
-                          className="flex items-center space-x-2 px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add Currency</span>
-                        </button>
-                      )}
+                      <DialogDescription className="font-display-xs-regular text-[#717680] dark:text-[#CCCCCC] text-[length:var(--display-xs-regular-font-size)] text-center tracking-[var(--display-xs-regular-letter-spacing)] leading-[var(--display-xs-regular-line-height)]">
+                        {isEditMode ? 'Update your event details' : 'Enter your event details to create an event'}
+                      </DialogDescription>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {formData.prices.map((price, index) => (
-                        <div key={index} className="flex items-center space-x-3">
-                          <div className="w-24">
-                            <select
-                              value={price.currency}
-                              onChange={(e) => handlePriceChange(index, 'currency', e.target.value)}
-                              disabled={isSubmitting}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-                            >
-                              {currencies.map((currency) => {
-                                const isSelected = formData.prices.some(
-                                  (p, i) => p.currency === currency && i !== index
-                                );
-                                return (
-                                  <option
-                                    key={currency}
-                                    value={currency}
-                                    disabled={isSelected}
-                                  >
-                                    {currency}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </div>
+                    <p className="[font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-[#717680] dark:text-[#CCCCCC] text-lg tracking-[-0.36px]">
+                      Step {currentStep} of 2
+                    </p>
+                  </div>
 
-                          <div className="flex-1">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={price.amount || ''}
-                              onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
+                  {/* Error Message */}
+                  {errors.general && (
+                    <div className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <p className="text-red-600 dark:text-red-400 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        {errors.general}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Step 1: Basic Information */}
+                  {currentStep === 1 && (
+                    <>
+                      {/* Form Fields */}
+                      <div className="flex flex-col items-start gap-6 w-full">
+                        {/* Event Name Field */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Name *
+                          </label>
+                          <div className="relative w-full">
+                            <Input
+                              id="name"
+                              className="h-[50px] px-3.5 py-2.5 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-[#2E483A] [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                              placeholder="Enter event name"
+                              value={formData.name}
+                              onChange={handleInputChange}
                               disabled={isSubmitting}
-                              className="w-full px-4 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-                              placeholder="Enter amount"
                             />
                           </div>
-
-                          {formData.prices.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removePrice(index)}
-                              disabled={isSubmitting}
-                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          {errors.name && (
+                            <span className="text-xs text-red-500">{errors.name}</span>
                           )}
                         </div>
-                      ))}
-                    </div>
-                    
-                    {errors.prices && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.prices}</p>
-                    )}
-                  </div>
 
-                  {/* Broadcast Room Question */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Do you have a broadcast room? *
-                    </label>
-                    <select
-                      value={formData.haveBroadcastRoom}
-                      onChange={(e) => handleSelectChange('haveBroadcastRoom', e.target.value)}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200 ${
-                        errors.haveBroadcastRoom ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                    >
-                      <option value="">Select answer</option>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                    {errors.haveBroadcastRoom && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.haveBroadcastRoom}</p>
-                    )}
-                  </div>
+                        {/* Event Date Field */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Date *
+                          </label>
+                          <CustomDatePicker
+                            value={formData.date}
+                            onChange={(date) => handleDateChange('date', date)}
+                            placeholder="Select event date"
+                            disabled={isSubmitting}
+                            className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          />
+                          {errors.date && (
+                            <span className="text-xs text-red-500">{errors.date}</span>
+                          )}
+                        </div>
 
-                  {/* Broadcast Software */}
-                  <div>
-                    <label htmlFor="broadcastSoftware" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      What broadcast software will you be using? *
-                    </label>
-                    <textarea
-                      id="broadcastSoftware"
-                      rows={3}
-                      value={formData.broadcastSoftware}
-                      onChange={handleInputChange}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200 resize-none ${
-                        errors.broadcastSoftware ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                      placeholder="Enter broadcast software details"
-                    />
-                    {errors.broadcastSoftware && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.broadcastSoftware}</p>
-                    )}
-                  </div>
+                        {/* Event Time Field */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Time *
+                          </label>
+                          <CustomTimePicker
+                            value={formData.time}
+                            onChange={handleTimeChange}
+                            placeholder="Select event time"
+                            disabled={isSubmitting}
+                            className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          />
+                          {errors.time && (
+                            <span className="text-xs text-red-500">{errors.time}</span>
+                          )}
+                        </div>
 
-                  {/* Test Stream Date */}
-                  <div>
-                    <label htmlFor="scheduledTestDate" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                      Schedule Test Stream with FaNect Support
-                    </label>
-                    <input
-                      id="scheduledTestDate"
-                      type="date"
-                      value={formData.scheduledTestDate}
-                      onChange={(e) => handleDateChange('scheduledTestDate', e.target.value)}
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200 ${
-                        errors.scheduledTestDate ? 'border-red-500 dark:border-red-400' : 'border-gray-300 dark:border-dark-700'
-                      }`}
-                    />
-                    {errors.scheduledTestDate && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.scheduledTestDate}</p>
-                    )}
-                  </div>
+                        {/* Event Description Field */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <label className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Description *
+                          </label>
+                          <Textarea
+                            id="description"
+                            className="h-[174px] px-3.5 pt-5 pb-2.5 bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px] resize-none"
+                            placeholder="Enter event description. You can use line breaks for paragraphs and format your text as needed."
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            disabled={isSubmitting}
+                            style={{ whiteSpace: 'pre-wrap' }}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Tip: Use line breaks to create paragraphs. Your formatting will be preserved.
+                          </p>
+                          {errors.description && (
+                            <span className="text-xs text-red-500">{errors.description}</span>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* File Uploads */}
-                  <div className="space-y-6">
-                    {/* Event Banner Upload */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                        Event Banner
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors duration-200">
-                        {imagePreviews.bannerUrl ? (
-                          <div className="space-y-4">
-                            <img
-                              src={imagePreviews.bannerUrl}
-                              alt="Banner Preview"
-                              className="max-h-32 mx-auto rounded-lg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, bannerUrl: undefined }));
-                                setImagePreviews(prev => ({ ...prev, bannerUrl: undefined }));
-                              }}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              Remove
-                            </button>
+                      {/* Continue Button */}
+                      <div className="flex flex-col items-center w-full">
+                        <Button 
+                          type="button"
+                          onClick={handleContinue}
+                          className="h-[50px] w-full bg-green-600 rounded-[10px] font-text-lg-semibold text-white text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)] hover:bg-green-700"
+                          disabled={isSubmitting}
+                        >
+                          Continue
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Step 2: Pricing and Media Upload */}
+                  {currentStep === 2 && (
+                    <>
+                      {/* Form Fields */}
+                      <div className="flex flex-col items-start gap-6 w-full">
+                        {/* Event Pricing */}
+                        <div className="flex flex-col items-start gap-4 w-full">
+                          <div className="flex items-center justify-between w-full">
+                            <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                              Event Pricing
+                            </h3>
+                            {formData.prices.length < currencies.length && (
+                              <Button
+                                type="button"
+                                onClick={addPrice}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Currency
+                              </Button>
+                            )}
                           </div>
-                        ) : (
-                          <div>
-                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-600 dark:text-dark-300 mb-2">Upload event banner</p>
+                          
+                          {formData.prices.map((price, index) => (
+                            <div key={index} className="flex items-start gap-2 w-full">
+                              <div className="w-[120px] h-[50px] flex items-center bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600">
+                                <Select value={price.currency} onValueChange={(value) => handlePriceChange(index, "currency", value)}>
+                                  <SelectTrigger className="w-full h-full border-0 bg-transparent cursor-pointer">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="cursor-pointer dark:!bg-[#FFFFFF]">
+                                    {currencies.map((currency) => {
+                                      const isSelected = formData.prices.some(
+                                        (p, i) => p.currency === currency && i !== index
+                                      );
+                                      return (
+                                        <SelectItem
+                                          key={currency}
+                                          value={currency}
+                                          disabled={isSelected}
+                                          className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]"
+                                        >
+                                          {currency}
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex-1 h-[50px] bg-gray-50 dark:bg-[#13201A] rounded-lg">
+                                <Input
+                                  type="number"
+                                  className="h-[50px] px-3.5 py-2.5 dark:bg-[#13201A] rounded-lg [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                                  placeholder="Enter amount"
+                                  value={price.amount || ''}
+                                  onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
+                                  disabled={isSubmitting}
+                                />
+                              </div>
+
+                              {formData.prices.length > 1 && (
+                                <Button
+                                  type="button"
+                                  onClick={() => removePrice(index)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-[50px] w-[60px] p-0 border-red-300 text-red-500 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {errors.prices && (
+                            <span className="text-xs text-red-500">{errors.prices}</span>
+                          )}
+                        </div>
+
+                        {/* Broadcast Room Question */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Do you have a broadcast room? *
+                          </h3>
+
+                          <Select value={formData.haveBroadcastRoom} onValueChange={(value) => handleSelectChange('haveBroadcastRoom', value)}>
+                            <SelectTrigger className="h-[50px] bg-gray-50 dark:bg-[#13201A] border-[#d5d7da] dark:border-gray-600 w-full cursor-pointer">
+                              <SelectValue placeholder="Select answer" />
+                            </SelectTrigger>
+                            <SelectContent className="cursor-pointer dark:!bg-[#FFFFFF]">
+                              <SelectItem className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]" value="yes">Yes</SelectItem>
+                              <SelectItem className="!cursor-pointer dark:!text-[#000000] dark:hover:bg-[#13201A] dark:hover:!text-[#FFFFFF] hover:bg-[#13201A] hover:text-[#FFFFFF]" value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.haveBroadcastRoom && (
+                            <span className="text-xs text-red-500">{errors.haveBroadcastRoom}</span>
+                          )}
+                        </div>
+
+                        {/* Broadcast Software */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            What broadcast software will you be using? *
+                          </h3>
+
+                          <Textarea
+                            id="broadcastSoftware"
+                            className="h-[94px] bg-gray-50 dark:bg-[#13201A] border-[#d5d7da] dark:border-gray-600 rounded-lg pt-5 pb-2.5 px-3.5 text-gray-700 dark:text-gray-200 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px] resize-none"
+                            placeholder="Enter broadcast software details"
+                            value={formData.broadcastSoftware}
+                            onChange={handleInputChange}
+                            disabled={isSubmitting}
+                          />
+                          {errors.broadcastSoftware && (
+                            <span className="text-xs text-red-500">{errors.broadcastSoftware}</span>
+                          )}
+                        </div>
+
+                        {/* Test Stream Date */}
+                        <div className="flex flex-col items-start gap-1.5 w-full">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Schedule Test Stream with FaNect Support
+                          </h3>
+
+                          <CustomDatePicker
+                            value={formData.scheduledTestDate}
+                            onChange={(date) => handleDateChange('scheduledTestDate', date)}
+                            placeholder="Select test stream date"
+                            disabled={isSubmitting}
+                            className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          />
+                          {errors.scheduledTestDate && (
+                            <span className="text-xs text-red-500">{errors.scheduledTestDate}</span>
+                          )}
+                        </div>
+
+                        {/* Event Banner Upload */}
+                        <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Banner
+                          </h3>
+
+                          <label htmlFor="bannerUrl" className="cursor-pointer w-full">
+                            <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
+                              <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
+                                {imagePreviews.bannerUrl ? (
+                                  <img
+                                    src={imagePreviews.bannerUrl}
+                                    alt="Banner Preview"
+                                    className="w-full h-[120px] object-contain rounded"
+                                  />
+                                ) : (
+                                  <>
+                                    <Upload className="w-6 h-6 text-green-600" />
+                                    <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
+                                      Upload event banner
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                             <input
+                              id="bannerUrl"
                               type="file"
                               accept="image/*"
+                              className="hidden"
                               onChange={(e) => handleFileChange(e, 'bannerUrl')}
                               disabled={isSubmitting}
-                              className="hidden"
-                              id="bannerUrl"
                             />
-                            <label
-                              htmlFor="bannerUrl"
-                              className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
-                            >
-                              Choose File
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                      {errors.bannerUrl && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.bannerUrl}</p>
-                      )}
-                    </div>
+                          </label>
+                          {errors.bannerUrl && (
+                            <span className="text-xs text-red-500">{errors.bannerUrl}</span>
+                          )}
+                        </div>
 
-                    {/* Watermark Upload */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                        Custom Watermark (this could be your logo)
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors duration-200">
-                        {imagePreviews.watermarkUrl ? (
-                          <div className="space-y-4">
-                            <img
-                              src={imagePreviews.watermarkUrl}
-                              alt="Watermark Preview"
-                              className="max-h-32 mx-auto rounded-lg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, watermarkUrl: undefined }));
-                                setImagePreviews(prev => ({ ...prev, watermarkUrl: undefined }));
-                              }}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-600 dark:text-dark-300 mb-2">Upload watermark</p>
+                        {/* Event Watermark Upload */}
+                        <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Custom Watermark (this could be your logo)
+                          </h3>
+
+                          <label htmlFor="watermarkUrl" className="cursor-pointer w-full">
+                            <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
+                              <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
+                                {imagePreviews.watermarkUrl ? (
+                                  <img
+                                    src={imagePreviews.watermarkUrl}
+                                    alt="Watermark Preview"
+                                    className="w-full h-[120px] object-contain rounded"
+                                  />
+                                ) : (
+                                  <>
+                                    <Upload className="w-6 h-6 text-green-600" />
+                                    <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
+                                      Upload watermark
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                             <input
+                              id="watermarkUrl"
                               type="file"
                               accept="image/*"
+                              className="hidden"
                               onChange={(e) => handleFileChange(e, 'watermarkUrl')}
                               disabled={isSubmitting}
-                              className="hidden"
-                              id="watermarkUrl"
                             />
-                            <label
-                              htmlFor="watermarkUrl"
-                              className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
-                            >
-                              Choose File
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                      {errors.watermarkUrl && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.watermarkUrl}</p>
-                      )}
-                    </div>
+                          </label>
+                          {errors.watermarkUrl && (
+                            <span className="text-xs text-red-500">{errors.watermarkUrl}</span>
+                          )}
+                        </div>
 
-                    {/* Event Trailer Upload */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                        Event Trailer
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors duration-200">
-                        {imagePreviews.eventTrailer ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-center space-x-2">
-                              <Upload className="w-6 h-6 text-primary-600" />
-                              <span className="text-primary-600 text-sm">{imagePreviews.eventTrailer}</span>
+                        {/* Event Trailer Upload */}
+                        <div className="flex flex-col w-full h-[165px] items-start gap-1.5">
+                          <h3 className="font-text-lg-medium text-gray-800 dark:text-[#CCCCCC] text-[length:var(--text-lg-medium-font-size)] tracking-[var(--text-lg-medium-letter-spacing)] leading-[var(--text-lg-medium-line-height)]">
+                            Event Trailer
+                          </h3>
+
+                          <label htmlFor="eventTrailer" className="cursor-pointer w-full">
+                            <div className="h-[133px] flex items-center justify-center w-full bg-gray-50 dark:bg-[#13201A] rounded-lg border border-dashed border-[#a4a7ae] dark:border-gray-600 shadow-shadow-xs hover:border-green-600 transition-colors">
+                              <div className="flex flex-col w-[157px] items-center justify-center gap-2.5">
+                                {imagePreviews.eventTrailer ? (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Upload className="w-6 h-6 text-green-600" />
+                                    <span className="text-green-600 text-xs text-center">
+                                      {imagePreviews.eventTrailer}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Upload className="w-6 h-6 text-green-600" />
+                                    <span className="text-green-600 whitespace-nowrap [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-base tracking-[-0.32px]">
+                                      Upload event trailer
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, eventTrailer: undefined }));
-                                setImagePreviews(prev => ({ ...prev, eventTrailer: undefined }));
-                              }}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-600 dark:text-dark-300 mb-2">Upload event trailer</p>
                             <input
+                              id="eventTrailer"
                               type="file"
                               accept="video/*"
+                              className="hidden"
                               onChange={(e) => handleFileChange(e, 'eventTrailer')}
                               disabled={isSubmitting}
-                              className="hidden"
-                              id="eventTrailer"
                             />
-                            <label
-                              htmlFor="eventTrailer"
-                              className="cursor-pointer inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
-                            >
-                              Choose File
-                            </label>
-                          </div>
-                        )}
+                          </label>
+                          {errors.eventTrailer && (
+                            <span className="text-xs text-red-500">{errors.eventTrailer}</span>
+                          )}
+                        </div>
                       </div>
-                      {errors.eventTrailer && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.eventTrailer}</p>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col space-y-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? 
-                        (isEditMode ? "Updating Event..." : "Creating Event...") : 
-                        (isEditMode ? "Update Event" : "Create Event")
-                      }
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={isSubmitting}
-                      className="w-full border border-gray-300 dark:border-dark-700 text-gray-700 dark:text-dark-300 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Back
-                    </button>
-                  </div>
+                      {/* Action Buttons */}
+                      <div className="flex flex-col items-center gap-4 w-full">
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="h-[50px] w-full bg-green-600 rounded-[10px] font-text-lg-semibold text-white text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)] hover:bg-green-700"
+                        >
+                          {isSubmitting ? 
+                            (isEditMode ? "Updating Event..." : "Creating Event...") : 
+                            (isEditMode ? "Update Event" : "Create Event")
+                          }
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleBack}
+                          disabled={isSubmitting}
+                          className="h-[50px] w-full border-[#d5d7da] dark:border-gray-600 rounded-[10px] font-text-lg-semibold text-gray-700 dark:text-gray-200 text-[length:var(--text-lg-semibold-font-size)] tracking-[var(--text-lg-semibold-letter-spacing)] leading-[var(--text-lg-semibold-line-height)]"
+                        >
+                          Back
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </form>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Alert */}
       <SuccessAlert
@@ -897,7 +911,7 @@ const CreateEventPage: React.FC = () => {
         message={successAlert.message}
         onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
       />
-    </div>
+    </>
   );
 };
 
