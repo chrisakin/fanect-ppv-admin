@@ -47,9 +47,9 @@ export interface CreateEventData {
   haveBroadcastRoom: boolean;
   broadcastSoftware: string;
   scheduledTestDate?: string;
-  bannerUrl?: File;
-  watermarkUrl?: File;
-  eventTrailer?: File;
+  banner?: File;
+  watermark?: File;
+  trailer?: File;
 }
 
 export interface UpdateEventData extends CreateEventData {
@@ -145,33 +145,34 @@ export const eventService = {
 
   // Update existing event
   updateEvent: async (id: string, eventData: UpdateEventData): Promise<{ message: string }> => {
-    const formData = new FormData();
+    const formDataToSend = new FormData();
     
     // Add text fields
-    formData.append('name', eventData.name);
-    formData.append('date', eventData.date);
-    formData.append('time', eventData.time);
-    formData.append('description', eventData.description);
-    formData.append('haveBroadcastRoom', eventData.haveBroadcastRoom.toString());
-    formData.append('broadcastSoftware', eventData.broadcastSoftware);
-    
-    if (eventData.scheduledTestDate) {
-      formData.append('scheduledTestDate', eventData.scheduledTestDate);
-    }
-    
-    // Add prices as JSON string
-    formData.append('prices', JSON.stringify(eventData.prices));
-    
-    // Add files (only if new files are provided)
-    if (eventData.bannerUrl instanceof File) {
-      formData.append('bannerUrl', eventData.bannerUrl);
-    }
-    if (eventData.watermarkUrl instanceof File) {
-      formData.append('watermarkUrl', eventData.watermarkUrl);
-    }
-    if (eventData.eventTrailer instanceof File) {
-      formData.append('eventTrailer', eventData.eventTrailer);
-    }
+     formDataToSend.append('name', eventData.name);
+        
+        if (eventData.date) {
+          formDataToSend.append('date', eventData.date as unknown as string);
+        }
+        
+        formDataToSend.append('time', eventData.time);
+        formDataToSend.append('description', eventData.description);
+        formDataToSend.append('prices', JSON.stringify(eventData.prices));
+        formDataToSend.append('haveBroadcastRoom', eventData.haveBroadcastRoom);
+        formDataToSend.append('broadcastSoftware', eventData.broadcastSoftware);
+        
+        if (eventData.scheduledTestDate) {
+          formDataToSend.append('scheduledTestDate', eventData.scheduledTestDate as unknown as string);
+        }
+        
+        if (eventData.bannerUrl) {
+          formDataToSend.append('banner', eventData.bannerUrl);
+        }
+        if (eventData.watermarkUrl) {
+          formDataToSend.append('watermark', eventData.watermarkUrl);
+        }
+        if (eventData.eventTrailer) {
+          formDataToSend.append('trailer', eventData.eventTrailer);
+        }
     
     const response = await api.put(`/admin/events/update/${id}`, formData, {
       headers: {
