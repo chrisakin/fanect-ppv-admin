@@ -325,11 +325,13 @@ const CreateEventPage: React.FC = () => {
                         Event Date *
                       </label>
                       <CustomDatePicker
-                          value={formData.date}
+                          value={formData.date ? new Date(formData.date) : null}
                           onChange={(date) => handleDateChange('date', date as unknown as string)}
                           placeholder="Select event date"
                           disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          className={`h-[50px] w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border border-solid border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base ${
+                            errors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         />
                       {errors.date && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
@@ -349,7 +351,9 @@ const CreateEventPage: React.FC = () => {
                           onChange={handleTimeChange}
                           placeholder="Select event time"
                           disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          className={`h-[50px] w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border border-solid border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base ${
+                            errors.time ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         />
                       {errors.time && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
@@ -417,10 +421,10 @@ const CreateEventPage: React.FC = () => {
                           onValueChange={(value) => handlePriceChange(index, 'currency', value)}
                           disabled={isSubmitting}
                         >
-                          <SelectTrigger className="h-12">
+                          <SelectTrigger className="h-12 bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
                             {currencies.map((currency) => {
                               const isUsed = formData.prices.some((p, i) => p.currency === currency && i !== index);
                               return (
@@ -428,6 +432,7 @@ const CreateEventPage: React.FC = () => {
                                   key={currency} 
                                   value={currency}
                                   disabled={isUsed}
+                                  className="hover:bg-gray-100 dark:hover:bg-dark-700"
                                 >
                                   {currency} {isUsed && '(Already used)'}
                                 </SelectItem>
@@ -444,7 +449,7 @@ const CreateEventPage: React.FC = () => {
                         <Input
                         id="amount"
                         type="number"
-                        className="h-[50px] px-3.5 py-2.5  dark:bg-[#13201A] rounded-lg [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                        className="h-[50px] px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base"
                         placeholder="Enter amount"
                         value={price.amount|| ''}
                         onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
@@ -494,12 +499,12 @@ const CreateEventPage: React.FC = () => {
                         onValueChange={(value) => handleInputChange('haveBroadcastRoom', value === 'yes')}
                         disabled={isSubmitting}
                       >
-                        <SelectTrigger className="h-12">
+                        <SelectTrigger className="h-12 bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes, I have a broadcast room</SelectItem>
-                          <SelectItem value="no">No, I need assistance</SelectItem>
+                        <SelectContent className="bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
+                          <SelectItem value="yes" className="hover:bg-gray-100 dark:hover:bg-dark-700">Yes, I have a broadcast room</SelectItem>
+                          <SelectItem value="no" className="hover:bg-gray-100 dark:hover:bg-dark-700">No, I need assistance</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -509,11 +514,13 @@ const CreateEventPage: React.FC = () => {
                         Test Stream Date *
                       </label>
                       <CustomDatePicker
-                          value={formData.date}
-                          onChange={(date) => handleDateChange('date', date as unknown as string)}
-                          placeholder="Select event date"
+                          value={formData.scheduledTestDate ? new Date(formData.scheduledTestDate) : null}
+                          onChange={(date) => handleDateChange('scheduledTestDate', date as unknown as string)}
+                          placeholder="Select test stream date"
                           disabled={isSubmitting}
-                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                          className={`h-[50px] w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border border-solid border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base ${
+                            errors.scheduledTestDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         />
                       {errors.scheduledTestDate && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, X, Activity, Edit3 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, X, Activity, Edit3, Play, Info } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 
 // Modal Component
@@ -147,6 +147,7 @@ const SingleEventPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'details' | 'live'>('details');
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -349,6 +350,130 @@ const SingleEventPage: React.FC = () => {
     }
   };
 
+  // AWS IVS Player Component
+  const IVSPlayer: React.FC<{ playbackUrl: string }> = ({ playbackUrl }) => {
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [playerError, setPlayerError] = useState<string | null>(null);
+
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video || !playbackUrl) return;
+
+      const handleLoadStart = () => {
+        setIsLoading(true);
+        setPlayerError(null);
+      };
+
+      const handleCanPlay = () => {
+        setIsLoading(false);
+      };
+
+      const handlePlay = () => {
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        setIsPlaying(false);
+      };
+
+      const handleError = () => {
+        setIsLoading(false);
+        setPlayerError('Failed to load stream. The stream may be offline or the URL is invalid.');
+      };
+
+      video.addEventListener('loadstart', handleLoadStart);
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('play', handlePlay);
+      video.addEventListener('pause', handlePause);
+      video.addEventListener('error', handleError);
+
+      // Set the source
+      video.src = playbackUrl;
+      video.load();
+
+      return () => {
+        video.removeEventListener('loadstart', handleLoadStart);
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('play', handlePlay);
+        video.removeEventListener('pause', handlePause);
+        video.removeEventListener('error', handleError);
+      };
+    }, [playbackUrl]);
+
+    const handlePlayPause = () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (video.paused) {
+        video.play().catch(() => {
+          setPlayerError('Failed to start playback. Please try again.');
+        });
+      } else {
+        video.pause();
+      }
+    };
+
+    return (
+      <div className="w-full">
+        <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+          <video
+            ref={videoRef}
+            className="w-full h-full"
+            controls
+            playsInline
+            muted
+          />
+          
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="text-center text-white">
+                <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p>Loading stream...</p>
+              </div>
+            </div>
+          )}
+          
+          {playerError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+              <div className="text-center text-white p-4">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                <p className="mb-4">{playerError}</p>
+                <button
+                  onClick={() => {
+                    setPlayerError(null);
+                    const video = videoRef.current;
+                    if (video) {
+                      video.load();
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${event?.status === 'Live' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-sm font-medium text-gray-900 dark:text-dark-100">
+                {event?.status === 'Live' ? 'Live Stream' : 'Stream Offline'}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-dark-300">
+              {event?.status === 'Live' ? 'Broadcasting now' : 'Stream not active'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -479,7 +604,44 @@ const SingleEventPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 p-4 lg:p-6">
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 dark:border-dark-700">
+          <nav className="flex space-x-8 px-4 lg:px-6">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'details'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Info className="w-4 h-4" />
+                <span>Event Details</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('live')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'live'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Play className="w-4 h-4" />
+                <span>Live Stream</span>
+                {event.status === 'Live' && (
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                )}
+              </div>
+            </button>
+          </nav>
+        </div>
+        {/* Tab Content */}
+        <div className="p-4 lg:p-6">
+          {activeTab === 'details' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Event Details</h3>
@@ -702,6 +864,85 @@ const SingleEventPage: React.FC = () => {
               </div>
             </div>
           </div>
+            </div>
+          )}
+
+          {activeTab === 'live' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Live Stream Player</h3>
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${event.status === 'Live' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-dark-100">
+                    {event.status === 'Live' ? 'Live' : 'Offline'}
+                  </span>
+                </div>
+              </div>
+
+              {event.ivsPlaybackUrl ? (
+                <IVSPlayer playbackUrl={event.ivsPlaybackUrl} />
+              ) : (
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-8 text-center">
+                  <Play className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">
+                    No Stream Available
+                  </h4>
+                  <p className="text-gray-600 dark:text-dark-300">
+                    This event doesn't have a playback URL configured or the stream hasn't been set up yet.
+                  </p>
+                </div>
+              )}
+
+              {/* Stream Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-dark-100 mb-3">Stream Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Status:</span>
+                      <span className={`font-medium ${event.status === 'Live' ? 'text-red-600' : 'text-gray-900 dark:text-dark-100'}`}>
+                        {event.status === 'Live' ? 'Broadcasting' : 'Offline'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Event Status:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-medium">{event.status}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Scheduled:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-medium">
+                        {new Date(event.date).toLocaleDateString()} at {event.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-dark-100 mb-3">Technical Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Playback URL:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-medium">
+                        {event.ivsPlaybackUrl ? 'Available' : 'Not configured'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Channel ARN:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-medium">
+                        {event.ivsChannelArn ? 'Configured' : 'Not configured'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-dark-300">Chat Room:</span>
+                      <span className="text-gray-900 dark:text-dark-100 font-medium">
+                        {event.ivsChatRoomArn ? 'Available' : 'Not configured'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
