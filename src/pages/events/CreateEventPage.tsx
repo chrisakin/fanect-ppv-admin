@@ -187,13 +187,6 @@ const CreateEventPage: React.FC = () => {
     }
   };
 
-  const handlePreview = () => {
-    if (validateForm()) {
-      // Could implement preview functionality here
-      console.log('Preview event:', formData);
-    }
-  };
-
   const currencies = Object.values(Currency).filter(c => c !== Currency.NONE);
   const availableCurrencies = currencies.filter(c => 
     !formData.prices.some(p => p.currency === c)
@@ -238,18 +231,7 @@ const CreateEventPage: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePreview}
-                disabled={isSubmitting}
-                className="hidden sm:flex items-center space-x-2"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Preview</span>
-              </Button>
-              
-              <Button
+            <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700"
