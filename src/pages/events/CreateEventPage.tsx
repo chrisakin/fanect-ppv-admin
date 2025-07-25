@@ -25,6 +25,8 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useEventStore } from '../../store/eventStore';
 import { Currency } from '../../types/event';
+import { CustomDatePicker } from "../../components/ui/custom-date-picker";
+import { CustomTimePicker } from "../../components/ui/custom-time-picker";
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
@@ -65,6 +67,32 @@ const CreateEventPage: React.FC = () => {
 
   const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     setFormData({ [field]: value });
+  };
+
+   const handleDateChange = (field: 'date' | 'scheduledTestDate', date: string | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: date,
+    }));
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
+  };
+
+  const handleTimeChange = (time: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      time,
+    }));
+    if (errors.time) {
+      setErrors((prev) => ({
+        ...prev,
+        time: undefined,
+      }));
+    }
   };
 
   const handlePriceChange = (index: number, field: 'currency' | 'amount', value: string | number) => {
@@ -314,16 +342,13 @@ const CreateEventPage: React.FC = () => {
                         <Calendar className="w-4 h-4 inline mr-1" />
                         Event Date *
                       </label>
-                      <Input
-                        id="date"
-                        name="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => handleInputChange('date', e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className={`${errors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
-                        disabled={isSubmitting}
-                      />
+                      <CustomDatePicker
+                          value={formData.date}
+                          onChange={(date) => handleDateChange('date', date as unknown as string)}
+                          placeholder="Select event date"
+                          disabled={isSubmitting}
+                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                        />
                       {errors.date && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-1" />
@@ -337,15 +362,13 @@ const CreateEventPage: React.FC = () => {
                         <Clock className="w-4 h-4 inline mr-1" />
                         Event Time *
                       </label>
-                      <Input
-                        id="time"
-                        name="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={(e) => handleInputChange('time', e.target.value)}
-                        className={`${errors.time ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
-                        disabled={isSubmitting}
-                      />
+                       <CustomTimePicker
+                          value={formData.time}
+                          onChange={handleTimeChange}
+                          placeholder="Select event time"
+                          disabled={isSubmitting}
+                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                        />
                       {errors.time && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-1" />
@@ -437,14 +460,13 @@ const CreateEventPage: React.FC = () => {
                           Amount
                         </label>
                         <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={price.amount}
-                          onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
-                          placeholder="0.00"
-                          className="h-12"
-                          disabled={isSubmitting}
+                        id="amount"
+                        type="number"
+                        className="h-[50px] px-3.5 py-2.5  dark:bg-[#13201A] rounded-lg [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                        placeholder="Enter amount"
+                        value={price.amount|| ''}
+                        onChange={(e) => handlePriceChange(index, 'amount', e.target.value)}
+                        disabled={isSubmitting}
                         />
                       </div>
 
@@ -504,16 +526,13 @@ const CreateEventPage: React.FC = () => {
                       <label htmlFor="scheduledTestDate" className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
                         Test Stream Date *
                       </label>
-                      <Input
-                        id="scheduledTestDate"
-                        name="scheduledTestDate"
-                        type="date"
-                        value={formData.scheduledTestDate}
-                        onChange={(e) => handleInputChange('scheduledTestDate', e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className={`${errors.scheduledTestDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} h-12`}
-                        disabled={isSubmitting}
-                      />
+                      <CustomDatePicker
+                          value={formData.date}
+                          onChange={(date) => handleDateChange('date', date as unknown as string)}
+                          placeholder="Select event date"
+                          disabled={isSubmitting}
+                          className="h-[50px] w-full px-3.5 py-2.5 bg-gray-50 dark:!bg-[#13201A] rounded-lg border border-solid border-[#d5d7da] dark:border-gray-600 [font-family:'Sofia_Pro-Regular',Helvetica] font-normal text-gray-700 dark:text-gray-200 text-base tracking-[-0.32px]"
+                        />
                       {errors.scheduledTestDate && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-1" />
