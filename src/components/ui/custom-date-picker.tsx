@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 
 interface CustomDatePickerProps {
   value: Date | null;
-  onChange: (date: Date | null | string) => void;
+  onChange: (date: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -45,7 +45,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
   const date = String(selectedDate.getDate()).padStart(2, "0");
   const formatted = `${year}-${month}-${date}`;
-  onChange(formatted); // Pass string instead of Date
+  onChange(formatted);
   setIsOpen(false);
 };
 
@@ -112,17 +112,26 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   };
 
  const formatInputDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
+
+  const getDateFromValue = () => {
+    if (!value) return null;
+    if (typeof value === 'string') {
+      return new Date(value);
+    }
+    return value;
+  };
+
   return (
     <div className="relative w-full">
       <div className="relative w-full">
         <Input
-          value={value ? formatInputDate(value) : ''}
+          value={value ? formatInputDate(getDateFromValue()!) : ''}
           placeholder={placeholder}
           readOnly
           disabled={disabled}

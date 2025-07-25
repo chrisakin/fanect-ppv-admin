@@ -17,7 +17,6 @@ import {
   CheckCircle, 
   Loader2,
   Save,
-  Eye
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -27,6 +26,7 @@ import { useEventStore } from '../../store/eventStore';
 import { Currency } from '../../types/event';
 import { CustomDatePicker } from "../../components/ui/custom-date-picker";
 import { CustomTimePicker } from "../../components/ui/custom-time-picker";
+import { se } from 'date-fns/locale';
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +47,6 @@ const CreateEventPage: React.FC = () => {
     resetForm,
     loadEventForEdit,
     submitEvent,
-    validateForm
   } = useEventStore();
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,29 +69,19 @@ const CreateEventPage: React.FC = () => {
   };
 
    const handleDateChange = (field: 'date' | 'scheduledTestDate', date: string | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: date,
-    }));
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    }
+    // setFormData((prev: unknown) => ({
+    //   ...prev,
+    //   [field]: date,
+    // }));
+    setFormData({ [field]: date || '' });
+    // Clear error when date is selected
+    setError(field, undefined);
   };
 
   const handleTimeChange = (time: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      time,
-    }));
-    if (errors.time) {
-      setErrors((prev) => ({
-        ...prev,
-        time: undefined,
-      }));
-    }
+    setFormData({ time });
+    // Clear error when time is selected
+    setError('time', undefined);
   };
 
   const handlePriceChange = (index: number, field: 'currency' | 'amount', value: string | number) => {
@@ -326,7 +315,7 @@ const CreateEventPage: React.FC = () => {
                       </label>
                       <CustomDatePicker
                           value={formData.date ? new Date(formData.date) : null}
-                          onChange={(date) => handleDateChange('date', date as unknown as string)}
+                          onChange={(date) => handleDateChange('date', date)}
                           placeholder="Select event date"
                           disabled={isSubmitting}
                           className={`h-[50px] w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border border-solid border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base ${
@@ -515,7 +504,7 @@ const CreateEventPage: React.FC = () => {
                       </label>
                       <CustomDatePicker
                           value={formData.scheduledTestDate ? new Date(formData.scheduledTestDate) : null}
-                          onChange={(date) => handleDateChange('scheduledTestDate', date as unknown as string)}
+                          onChange={(date) => handleDateChange('scheduledTestDate', date)}
                           placeholder="Select test stream date"
                           disabled={isSubmitting}
                           className={`h-[50px] w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 rounded-lg border border-solid border-gray-300 dark:border-dark-600 font-normal text-gray-700 dark:text-gray-200 text-base ${
