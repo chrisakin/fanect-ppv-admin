@@ -1,144 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Filter, Search, Eye, Edit3, CheckCircle, Clock, AlertCircle, ArrowLeft, Plus, ChevronLeft, ChevronRight, MoreVertical, X, Activity } from 'lucide-react';
+import { Calendar, Filter, Eye, Edit3, CheckCircle, Clock, AlertCircle, Plus, Activity } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
-
-// Modal Component
-interface ConfirmationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (reason?: string) => void;
-  title: string;
-  message: string;
-  confirmText: string;
-  confirmColor: string;
-  showReasonInput?: boolean;
-  isLoading?: boolean;
-}
-
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  confirmText,
-  confirmColor,
-  showReasonInput = false,
-  isLoading = false
-}) => {
-  const [reason, setReason] = useState('');
-
-  const handleConfirm = () => {
-    onConfirm(showReasonInput ? reason : undefined);
-  };
-
-  const handleClose = () => {
-    setReason('');
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">{title}</h3>
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-dark-300"
-              disabled={isLoading}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <p className="text-gray-600 dark:text-dark-300 mb-6">{message}</p>
-          
-          {showReasonInput && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
-                Rejection Reason *
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Please provide a reason for rejecting this event..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 resize-none"
-                rows={4}
-                required
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={handleClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={isLoading || (showReasonInput && !reason.trim())}
-              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${confirmColor}`}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Processing...
-                </div>
-              ) : (
-                confirmText
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Success Alert Component
-interface SuccessAlertProps {
-  isOpen: boolean;
-  message: string;
-  onClose: () => void;
-}
-
-const SuccessAlert: React.FC<SuccessAlertProps> = ({ isOpen, message, onClose }) => {
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed top-4 right-4 z-50">
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg">
-        <div className="flex items-center">
-          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-3" />
-          <p className="text-green-800 dark:text-green-200">{message}</p>
-          <button
-            onClick={onClose}
-            className="ml-4 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { ConfirmationModal } from '../../components/ui/confirmation-modal';
+import { SuccessAlert } from '../../components/ui/success-alert';
+import { ErrorAlert } from '../../components/ui/error-alert';
+import { Pagination } from '../../components/ui/pagination';
+import { LoadingSpinner } from '../../components/ui/loading-spinner';
+import { ActionDropdown } from '../../components/ui/action-dropdown';
+import { FilterBar } from '../../components/ui/filter-bar';
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -148,7 +18,6 @@ const EventsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -184,20 +53,6 @@ const EventsPage: React.FC = () => {
     endDate: '',
     searchTerm: ''
   });
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Fetch events with search and filters
   const fetchEvents = async (page: number = 1, searchTerm: string = '') => {
@@ -450,124 +305,115 @@ const EventsPage: React.FC = () => {
   };
 
   // Action dropdown component
-  const ActionDropdown: React.FC<{ event: ApiEvent }> = ({ event }) => {
-    const isOpen = openDropdown === event._id;
-    const isLoading = actionLoading === event._id;
+  const getEventActionItems = (event: ApiEvent) => {
+    const items = [
+      {
+        icon: Eye,
+        label: 'View Details',
+        onClick: () => handleViewEvent(event._id)
+      },
+      {
+        icon: Edit3,
+        label: 'Edit Event',
+        onClick: () => {
+          navigate(`/events/edit/${event._id}`);
+          setOpenDropdown(null);
+        }
+      }
+    ];
 
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setOpenDropdown(isOpen ? null : event._id)}
-          className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200"
-          disabled={isLoading}
-        >
-          <MoreVertical className="w-4 h-4 text-gray-500 dark:text-dark-400" />
-        </button>
-        
-        {isOpen && (
-          <div 
-            ref={dropdownRef}
-            className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 z-[60]"
-          >
-            <div className="py-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewEvent(event._id);
-                }}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200"
-              >
-                <Eye className="w-4 h-4 mr-3" />
-                View Details
-              </button>
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/events/edit/${event._id}`);
-                  setOpenDropdown(null);
-                }}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200"
-              >
-                <Edit3 className="w-4 h-4 mr-3" />
-                Edit Event
-              </button>
-              
-              {event.adminStatus === 'Pending' && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openConfirmationModal('approve', event._id);
-                    }}
-                    disabled={isLoading}
-                    className="flex items-center w-full px-4 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-3" />
-                    Approve Event
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openConfirmationModal('reject', event._id);
-                    }}
-                    disabled={isLoading}
-                    className="flex items-center w-full px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <AlertCircle className="w-4 h-4 mr-3" />
-                    Reject Event
-                  </button>
-                </>
-              )}
-              
-              {event.adminStatus === 'Approved' && (
-                <>
-                  {event.status !== 'Past' && (
-                    <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStreamAction(event._id, event.status === 'Live' ? 'stream-end' : 'stream-start');
-                    }}
-                    disabled={isLoading}
-                    className="flex items-center w-full px-4 py-2 text-sm text-blue-700 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <Activity className="w-4 h-4 mr-3" />
-                    {event.status === 'Live' ? 'Stop Streaming' : 'Start Streaming'}
-                  </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openConfirmationModal('unpublish', event._id);
-                    }}
-                    disabled={isLoading}
-                    className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <Clock className="w-4 h-4 mr-3" />
-                    Unpublish Event
-                  </button>
-                </>
-              )}
+    if (event.adminStatus === 'Pending') {
+      items.push(
+        {
+          icon: CheckCircle,
+          label: 'Approve Event',
+          onClick: () => openConfirmationModal('approve', event._id),
+          disabled: actionLoading === event._id,
+          className: 'text-green-700 dark:text-green-400'
+        },
+        {
+          icon: AlertCircle,
+          label: 'Reject Event',
+          onClick: () => openConfirmationModal('reject', event._id),
+          disabled: actionLoading === event._id,
+          className: 'text-red-700 dark:text-red-400'
+        }
+      );
+    }
 
-              {event.adminStatus === 'Rejected' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openConfirmationModal('approve', event._id);
-                  }}
-                  disabled={isLoading}
-                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-                >
-                  <CheckCircle className="w-4 h-4 mr-3" />
-                  Approve Event
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    if (event.adminStatus === 'Approved') {
+      if (event.status !== 'Past') {
+        items.push({
+          icon: Activity,
+          label: event.status === 'Live' ? 'Stop Streaming' : 'Start Streaming',
+          onClick: () => handleStreamAction(event._id, event.status === 'Live' ? 'stream-end' : 'stream-start'),
+          disabled: actionLoading === event._id,
+          className: 'text-blue-700 dark:text-blue-400'
+        });
+      }
+      items.push({
+        icon: Clock,
+        label: 'Unpublish Event',
+        onClick: () => openConfirmationModal('unpublish', event._id),
+        disabled: actionLoading === event._id,
+        className: 'text-yellow-700 dark:text-yellow-400'
+      });
+    }
+
+    if (event.adminStatus === 'Rejected') {
+      items.push({
+        icon: CheckCircle,
+        label: 'Approve Event',
+        onClick: () => openConfirmationModal('approve', event._id),
+        disabled: actionLoading === event._id,
+        className: 'text-green-700 dark:text-green-400'
+      });
+    }
+
+    return items;
   };
+
+  // Filter configuration
+  const filterConfigs = [
+    {
+      key: 'status',
+      label: 'Event Status',
+      value: filters.status,
+      icon: Filter,
+      options: [
+        { value: 'All', label: 'All Status' },
+        { value: 'Past', label: 'Past' },
+        { value: 'Live', label: 'Live' },
+        { value: 'Upcoming', label: 'Upcoming' }
+      ]
+    },
+    {
+      key: 'adminStatus',
+      label: 'Admin Status',
+      value: filters.adminStatus,
+      options: [
+        { value: 'All', label: 'All Admin Status' },
+        { value: 'Pending', label: 'Pending' },
+        { value: 'Approved', label: 'Approved' },
+        { value: 'Rejected', label: 'Rejected' }
+      ]
+    },
+    {
+      key: 'startDate',
+      label: 'Start Date',
+      value: filters.startDate,
+      type: 'date' as const,
+      icon: Calendar,
+      placeholder: 'Start Date'
+    },
+    {
+      key: 'endDate',
+      label: 'End Date',
+      value: filters.endDate,
+      type: 'date' as const,
+      placeholder: 'End Date'
+    }
+  ];
 
   // Single Event Detail View
 
@@ -586,108 +432,26 @@ const EventsPage: React.FC = () => {
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-red-600 dark:text-red-400 flex items-center">
-              <AlertCircle className="w-4 h-4 mr-2" />
-              {error}
-            </p>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      <ErrorAlert
+        isOpen={!!error}
+        message={error || ''}
+        onClose={() => setError(null)}
+      />
 
       {/* Filters */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-          {/* Search */}
-          <div className="sm:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
-            <input
-              type="text"
-              placeholder="Search events..."
-              value={filters.searchTerm}
-              onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200"
-            />
-          </div>
-
-          {/* Event Status Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500 dark:text-dark-400 flex-shrink-0" />
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-            >
-              <option value="All">All Status</option>
-              <option value="Past">Past</option>
-              <option value="Live">Live</option>
-              <option value="Upcoming">Upcoming</option>
-            </select>
-          </div>
-
-          {/* Admin Status Filter */}
-          <div>
-            <select
-              value={filters.adminStatus}
-              onChange={(e) => handleFilterChange('adminStatus', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-            >
-              <option value="All">All Admin Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          {/* Start Date */}
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-gray-500 dark:text-dark-400 flex-shrink-0" />
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-              placeholder="Start Date"
-            />
-          </div>
-
-          {/* End Date */}
-          <div>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
-              placeholder="End Date"
-            />
-          </div>
-        </div>
-
-        {/* Clear Filters Button */}
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={clearFilters}
-            className="px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors duration-200"
-          >
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterBar
+        filters={filterConfigs}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        searchValue={filters.searchTerm}
+        onSearchChange={(value) => handleFilterChange('searchTerm', value)}
+        searchPlaceholder="Search events..."
+      />
 
       {/* Events Table */}
       <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingSpinner />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -759,7 +523,13 @@ const EventsPage: React.FC = () => {
                         {event.prices && event.prices.length > 0 ? formatCurrency(event.prices[0].amount, event.prices[0].currency) : 'Free'}
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <ActionDropdown event={event} />
+                        <ActionDropdown
+                          items={getEventActionItems(event)}
+                          isOpen={openDropdown === event._id}
+                          onToggle={() => setOpenDropdown(openDropdown === event._id ? null : event._id)}
+                          isLoading={actionLoading === event._id}
+                          onClickOutside={() => setOpenDropdown(null)}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -768,56 +538,14 @@ const EventsPage: React.FC = () => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="bg-gray-50 dark:bg-dark-700 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-dark-600">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-dark-600 text-sm font-medium rounded-md text-gray-700 dark:text-dark-300 bg-white dark:bg-dark-800 hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-dark-600 text-sm font-medium rounded-md text-gray-700 dark:text-dark-300 bg-white dark:bg-dark-800 hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700 dark:text-dark-300">
-                      Showing <span className="font-medium">{((currentPage - 1) * limit) + 1}</span> to{' '}
-                      <span className="font-medium">{Math.min(currentPage * limit, totalDocs)}</span> of{' '}
-                      <span className="font-medium">{totalDocs}</span> results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={handlePreviousPage}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm font-medium text-gray-500 dark:text-dark-400 hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm font-medium text-gray-700 dark:text-dark-300">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button
-                        onClick={handleNextPage}
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm font-medium text-gray-500 dark:text-dark-400 hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPreviousPage={handlePreviousPage}
+              onNextPage={handleNextPage}
+            />
           </>
         )}
       </div>

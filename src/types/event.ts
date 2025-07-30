@@ -58,6 +58,7 @@ export enum Currency {
   GNF = "GNF", // Guinean Franc
   MRU = "MRU", // Mauritanian Ouguiya
   STN = "STN",
+  NONE = "NONE",
 }
 
 export interface IPrice {

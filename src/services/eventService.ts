@@ -39,6 +39,9 @@ export interface ApiEvent {
 }
 
 export interface CreateEventData {
+  banner: any;
+  watermark: any;
+  trailer: any;
   name: string;
   date: string;
   time: string;
@@ -53,6 +56,9 @@ export interface CreateEventData {
 }
 
 export interface UpdateEventData extends CreateEventData {
+  banner: any;
+  watermark: any;
+  trailer: any;
   // Same as CreateEventData for now
 }
 
