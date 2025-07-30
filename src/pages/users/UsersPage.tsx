@@ -564,7 +564,7 @@ const UsersPage: React.FC = () => {
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
             >
               <option value="All">All Locked</option>
-              <option value="locked">Locked</option>
+              <option value="Locked">Locked</option>
               <option value="Not Locked">Not Locked</option>
             </select>
           </div>
@@ -637,7 +637,7 @@ const UsersPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
-                        @{user.username}
+                        {user.username}
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
                         {user.email}

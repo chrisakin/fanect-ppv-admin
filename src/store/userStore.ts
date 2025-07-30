@@ -3,7 +3,7 @@ import { userService, ApiUser, UserStatus } from '../services/userService';
 
 interface UserFilters {
   status: UserStatus | 'All';
-  locked: 'All' | 'Loacked' | 'Not Loacked';
+  locked: 'All' | 'Locked' | 'Not Locked';
   searchTerm: string;
 }
 
@@ -40,7 +40,7 @@ interface UserState {
 
 const initialFilters: UserFilters = {
   status: 'All',
-  verified: 'All',
+  locked: 'All',
   searchTerm: ''
 };
 
@@ -75,7 +75,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const apiFilters = {
         status: filters.status,
         searchTerm: searchTerm.trim(),
-        verified: filters.verified
+        locked: filters.locked
       };
       
       const response = await userService.getAllUsers(page, limit, apiFilters);

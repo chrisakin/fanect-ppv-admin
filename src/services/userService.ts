@@ -38,7 +38,7 @@ export const userService = {
     filters?: {
       status?: UserStatus | 'All';
       searchTerm?: string;
-      verified?: 'All' | 'Verified' | 'Not Verified';
+      locked?: 'All' | 'Locked' | 'Not Locked';
     }
   ): Promise<UsersResponse> => {
     let url = `/admin/users/all-users?page=${page}&limit=${limit}`;
@@ -50,9 +50,9 @@ export const userService = {
       if (filters.searchTerm && filters.searchTerm.trim()) {
         url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
       }
-      if (filters.verified && filters.verified !== 'All') {
-        const isVerified = filters.verified === 'Verified';
-        url += `&isVerified=${isVerified}`;
+      if (filters.locked && filters.locked !== 'All') {
+        const locked = filters.locked === 'Locked' ? 'locked' : 'not-locked';
+        url += `&locked=${locked}`;
       }
     }
     
