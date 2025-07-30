@@ -10,6 +10,21 @@ export interface User {
   isLocked: boolean;
 }
 
+// Add interface for API user structure to match the actual API response
+export interface ApiUser {
+  _id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  isVerified: boolean;
+  lastLogin: string;
+  locked: boolean;
+  status: 'Active' | 'Inactive';
+  eventsJoinedCount: number;
+}
+
 export interface Event {
   id: string;
   title: string;
