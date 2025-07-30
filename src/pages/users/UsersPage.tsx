@@ -1,6 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Eye, Lock, Unlock, Mail, Calendar, DollarSign, Activity, MoreVertical, X, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { userService, ApiUser, UserStatus } from '../../services/userService';
+import { ApiUser, UserStatus } from '../../services/userService';
+import { useUserStore } from '../../store/userStore';
+
+// Confirmation Modal Component
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText: string;
+  confirmColor: string;
+  isLoading?: boolean;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  confirmColor,
+  isLoading = false
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">{title}</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-dark-300"
+              disabled={isLoading}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <p className="text-gray-600 dark:text-dark-300 mb-6">{message}</p>
+          
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-700 text-gray-700 dark:text-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${confirmColor}`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Processing...
+                </div>
+              ) : (
+                confirmText
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Success Alert Component
 interface SuccessAlertProps {
@@ -41,23 +112,39 @@ const SuccessAlert: React.FC<SuccessAlertProps> = ({ isOpen, message, onClose })
 
 const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
-  const [users, setUsers] = useState<ApiUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalDocs, setTotalDocs] = useState(0);
-  const [limit] = useState(10);
-  
-  // Filter state
-  const [filters, setFilters] = useState({
-    status: 'All' as UserStatus | 'All',
-    searchTerm: ''
+  // Store state
+  const {
+    users,
+    loading,
+    error,
+    actionLoading,
+    currentPage,
+    totalPages,
+    totalDocs,
+    limit,
+    filters,
+    setFilters,
+    setCurrentPage,
+    fetchUsers,
+    lockUser,
+    unlockUser,
+    clearError
+  } = useUserStore();
+
+  // Modal state
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: 'lock' | 'unlock' | null;
+    userId: string | null;
+    userName: string | null;
+  }>({
+    isOpen: false,
+    type: null,
+    userId: null,
+    userName: null
   });
 
   // Success alert state
@@ -83,34 +170,10 @@ const UsersPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch users with search and filters
-  const fetchUsers = async (page: number = 1, searchTerm: string = '') => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const apiFilters = {
-        status: filters.status,
-        searchTerm: searchTerm.trim()
-      };
-      
-      const response = await userService.getAllUsers(page, limit, apiFilters);
-      setUsers(response.docs);
-      setCurrentPage(response.currentPage);
-      setTotalPages(response.totalPages);
-      setTotalDocs(response.totalDocs);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch users');
-      console.error('Error fetching users:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Load users on component mount, page change, or filter change
   useEffect(() => {
     fetchUsers(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status]);
+  }, [currentPage, filters.status, filters.locked]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -125,48 +188,54 @@ const UsersPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [filters.searchTerm]);
 
-  const toggleUserLock = async (userId: string) => {
-    try {
-      setActionLoading(userId);
-      const response = await userService.toggleUserLock(userId);
-      
-      // Refresh users list
-      await fetchUsers(currentPage, filters.searchTerm);
-      
-      // Show success alert
-      setSuccessAlert({
-        isOpen: true,
-        message: response.message || 'User status updated successfully!'
-      });
-      
-      setOpenDropdown(null);
-      
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user status');
-      console.error('Error toggling user lock:', err);
-    } finally {
-      setActionLoading(null);
-    }
+  // Open confirmation modal
+  const openConfirmationModal = (type: 'lock' | 'unlock', userId: string, userName: string) => {
+    setModalState({
+      isOpen: true,
+      type,
+      userId,
+      userName
+    });
+    setOpenDropdown(null);
   };
 
-  const resetUserPassword = async (userId: string) => {
+  // Close confirmation modal
+  const closeConfirmationModal = () => {
+    setModalState({
+      isOpen: false,
+      type: null,
+      userId: null,
+      userName: null
+    });
+  };
+
+  // Handle user lock/unlock with confirmation
+  const handleUserAction = async () => {
+    if (!modalState.userId || !modalState.type) return;
+
     try {
-      setActionLoading(userId);
-      const response = await userService.resetUserPassword(userId);
+      let result;
       
-      // Show success alert
-      setSuccessAlert({
-        isOpen: true,
-        message: response.message || 'Password reset email sent successfully!'
-      });
+      if (modalState.type === 'lock') {
+        result = await lockUser(modalState.userId);
+      } else {
+        result = await unlockUser(modalState.userId);
+      }
       
-      setOpenDropdown(null);
+      if (result.success) {
+        // Show success alert
+        setSuccessAlert({
+          isOpen: true,
+          message: result.message || `User ${modalState.type}ed successfully!`
+        });
+      }
+      
+      // Close modal
+      closeConfirmationModal();
       
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset user password');
-      console.error('Error resetting user password:', err);
-    } finally {
-      setActionLoading(null);
+      console.error(`Error ${modalState.type}ing user:`, err);
+      closeConfirmationModal();
     }
   };
 
@@ -185,7 +254,7 @@ const UsersPage: React.FC = () => {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters({ [key]: value });
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
@@ -195,10 +264,32 @@ const UsersPage: React.FC = () => {
   const clearFilters = () => {
     setFilters({
       status: 'All',
+      locked: 'All',
       searchTerm: ''
     });
     if (currentPage !== 1) {
       setCurrentPage(1);
+    }
+  };
+
+  // Get modal configuration based on action type
+  const getModalConfig = () => {
+    const { type, userName } = modalState;
+    
+    if (type === 'lock') {
+      return {
+        title: 'Lock User Account',
+        message: `Are you sure you want to lock ${userName}'s account? They will not be able to access their account until it's unlocked.`,
+        confirmText: 'Lock Account',
+        confirmColor: 'bg-red-600 hover:bg-red-700'
+      };
+    } else {
+      return {
+        title: 'Unlock User Account',
+        message: `Are you sure you want to unlock ${userName}'s account? They will be able to access their account again.`,
+        confirmText: 'Unlock Account',
+        confirmColor: 'bg-green-600 hover:bg-green-700'
+      };
     }
   };
 
@@ -238,7 +329,11 @@ const UsersPage: React.FC = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleUserLock(user._id);
+                  openConfirmationModal(
+                    user.locked ? 'unlock' : 'lock', 
+                    user._id, 
+                    `${user.firstName} ${user.lastName}`
+                  );
                 }}
                 disabled={isLoading}
                 className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50 ${
@@ -247,18 +342,6 @@ const UsersPage: React.FC = () => {
               >
                 {user.locked ? <Unlock className="w-4 h-4 mr-3" /> : <Lock className="w-4 h-4 mr-3" />}
                 {user.locked ? 'Unlock Account' : 'Lock Account'}
-              </button>
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resetUserPassword(user._id);
-                }}
-                disabled={isLoading}
-                className="flex items-center w-full px-4 py-2 text-sm text-blue-700 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 disabled:opacity-50"
-              >
-                <Mail className="w-4 h-4 mr-3" />
-                Reset Password
               </button>
             </div>
           </div>
@@ -315,7 +398,11 @@ const UsersPage: React.FC = () => {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => toggleUserLock(selectedUser._id)}
+                  onClick={() => openConfirmationModal(
+                    selectedUser.locked ? 'unlock' : 'lock',
+                    selectedUser._id,
+                    `${selectedUser.firstName} ${selectedUser.lastName}`
+                  )}
                   className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
                     selectedUser.locked
                       ? 'bg-green-600 text-white hover:bg-green-700'
@@ -324,12 +411,6 @@ const UsersPage: React.FC = () => {
                 >
                   {selectedUser.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                   <span>{selectedUser.locked ? 'Unlock' : 'Lock'} Account</span>
-                </button>
-                <button 
-                  onClick={() => resetUserPassword(selectedUser._id)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Reset Password
                 </button>
               </div>
             </div>
@@ -423,11 +504,8 @@ const UsersPage: React.FC = () => {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">User Management</h1>
-        <button className="bg-blue-600 text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-blue-700">
-          Export Users
-        </button>
       </div>
 
       {/* Error Message */}
@@ -439,7 +517,7 @@ const UsersPage: React.FC = () => {
               {error}
             </p>
             <button
-              onClick={() => setError(null)}
+              onClick={clearError}
               className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
             >
               <X className="w-4 h-4" />
@@ -450,7 +528,7 @@ const UsersPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="sm:col-span-2 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
@@ -474,6 +552,20 @@ const UsersPage: React.FC = () => {
               <option value="All">All Status</option>
               <option value={UserStatus.ACTIVE}>Active</option>
               <option value={UserStatus.INACTIVE}>Inactive</option>
+            </select>
+          </div>
+
+          {/* Verification Filter */}
+          <div className="flex items-center space-x-2">
+            <Filter className="w-4 h-4 text-gray-500 dark:text-dark-400 flex-shrink-0" />
+            <select
+              value={filters.locked}
+              onChange={(e) => handleFilterChange('locked', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
+            >
+              <option value="All">All Locked</option>
+              <option value="locked">Locked</option>
+              <option value="Not Locked">Not Locked</option>
             </select>
           </div>
 
@@ -505,6 +597,12 @@ const UsersPage: React.FC = () => {
                       User
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      Username
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
@@ -514,7 +612,7 @@ const UsersPage: React.FC = () => {
                       Events Joined
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Verification
+                     Locked Status
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Actions
@@ -535,10 +633,14 @@ const UsersPage: React.FC = () => {
                             <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
                               {user.firstName} {user.lastName}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-dark-400">@{user.username}</div>
-                            <div className="text-sm text-gray-500 dark:text-dark-400">{user.email}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
+                        @{user.username}
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
+                        {user.email}
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
@@ -560,9 +662,9 @@ const UsersPage: React.FC = () => {
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.isVerified ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                          user.locked  ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400':'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
                         }`}>
-                          {user.isVerified ? 'Verified' : 'Not Verified'}
+                          {user.locked ? 'Locked' : 'Not Locked'}
                         </span>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -628,6 +730,15 @@ const UsersPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        onClose={closeConfirmationModal}
+        onConfirm={handleUserAction}
+        isLoading={actionLoading === modalState.userId}
+        {...getModalConfig()}
+      />
 
       {/* Success Alert */}
       <SuccessAlert
