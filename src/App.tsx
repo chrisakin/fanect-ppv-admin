@@ -10,6 +10,7 @@ import EventsPage from './pages/events/EventsPage';
 import SingleEventPage from './pages/events/SingleEventPage';
 import CreateEventPage from './pages/events/CreateEventPage';
 import UsersPage from './pages/users/UsersPage';
+import SingleUserPage from './pages/users/SingleUserPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
 import SupportPage from './pages/support/SupportPage';
 
@@ -35,6 +36,7 @@ function App() {
               <Route path="/events/edit/:id" element={<CreateEventPage />} />
               <Route path="/events/:id" element={<SingleEventPage />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/users/:id" element={<SingleUserPage />} />
               <Route path="/organizers" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Organizers - Coming Soon</h1></div>} />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/analytics" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Analytics - Coming Soon</h1></div>} />

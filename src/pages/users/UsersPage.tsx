@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Lock, Unlock, Mail, Calendar, Activity, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, Lock, Unlock, Filter } from 'lucide-react';
 import { ApiUser, UserStatus } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
@@ -11,7 +12,7 @@ import { ActionDropdown } from '../../components/ui/action-dropdown';
 import { FilterBar } from '../../components/ui/filter-bar';
 
 const UsersPage: React.FC = () => {
-  const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
+  const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Store state
@@ -184,7 +185,7 @@ const UsersPage: React.FC = () => {
       icon: Eye,
       label: 'View Details',
       onClick: () => {
-        setSelectedUser(user);
+        navigate(`/users/${user._id}`);
         setOpenDropdown(null);
       }
     },
@@ -228,159 +229,6 @@ const UsersPage: React.FC = () => {
       ]
     }
   ];
-
-
-  if (selectedUser) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSelectedUser(null)}
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            ← Back to Users
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-dark-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">
-                    {selectedUser.firstName[0]}{selectedUser.lastName[0]}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100">
-                    {selectedUser.firstName} {selectedUser.lastName}
-                  </h1>
-                  <p className="text-gray-600 dark:text-dark-300">@{selectedUser.username}</p>
-                  <p className="text-gray-600 dark:text-dark-300">{selectedUser.email}</p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                    }`}>
-                      {selectedUser.status}
-                    </span>
-                    {selectedUser.locked && (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 rounded-full text-xs font-medium">
-                        Locked
-                      </span>
-                    )}
-                    {selectedUser.isVerified && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full text-xs font-medium">
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => openConfirmationModal(
-                    selectedUser.locked ? 'unlock' : 'lock',
-                    selectedUser._id,
-                    `${selectedUser.firstName} ${selectedUser.lastName}`
-                  )}
-                  className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
-                    selectedUser.locked
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-red-600 text-white hover:bg-red-700'
-                  }`}
-                >
-                  {selectedUser.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                  <span>{selectedUser.locked ? 'Unlock' : 'Lock'} Account</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Account Information</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-gray-500 dark:text-dark-400" />
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-dark-300">Email</p>
-                      <p className="text-gray-900 dark:text-dark-100">{selectedUser.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-500 dark:text-dark-400" />
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-dark-300">Member Since</p>
-                      <p className="text-gray-900 dark:text-dark-100">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Activity className="w-5 h-5 text-gray-500 dark:text-dark-400" />
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-dark-300">Last Login</p>
-                      <p className="text-gray-900 dark:text-dark-100">{new Date(selectedUser.lastLogin).toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Activity Summary</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 dark:text-dark-300">Events Joined</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{selectedUser.eventsJoinedCount}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Account Status</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-100">Account Status</p>
-                      <p className="text-xs text-gray-500 dark:text-dark-400">Current account status</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                    }`}>
-                      {selectedUser.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-100">Email Verification</p>
-                      <p className="text-xs text-gray-500 dark:text-dark-400">Email verification status</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.isVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                    }`}>
-                      {selectedUser.isVerified ? 'Verified' : 'Not Verified'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-100">Account Lock</p>
-                      <p className="text-xs text-gray-500 dark:text-dark-400">Account lock status</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.locked ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                    }`}>
-                      {selectedUser.locked ? 'Locked' : 'Unlocked'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 lg:space-y-6">

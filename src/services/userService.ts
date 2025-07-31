@@ -30,6 +30,11 @@ export interface UsersResponse {
   limit: number;
 }
 
+export interface SingleUserResponse {
+  message: string;
+  user: ApiUser;
+}
+
 export const userService = {
   // Get all users with pagination and filters
   getAllUsers: async (
@@ -57,6 +62,12 @@ export const userService = {
     }
     
     const response = await api.get(url);
+    return response.data;
+  },
+
+  // Get single user by ID
+  getSingleUser: async (id: string): Promise<SingleUserResponse> => {
+    const response = await api.get(`/admin/users/single-user/${id}`);
     return response.data;
   },
 
