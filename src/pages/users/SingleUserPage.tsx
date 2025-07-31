@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail } from 'lucide-react';
+import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail, Filter, Search, Gift } from 'lucide-react';
 import { userService, ApiUser } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
+import { useTransactionStore } from '../../store/transactionStore';
+import { TransactionStatus, PaymentMethod } from '../../types/transaction';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
+import { Pagination } from '../../components/ui/pagination';
+import { FilterBar } from '../../components/ui/filter-bar';
 
 const SingleUserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +22,23 @@ const SingleUserPage: React.FC = () => {
   
   // Store actions
   const { actionLoading, lockUser, unlockUser } = useUserStore();
+  
+  // Transaction store
+  const {
+    transactions,
+    loading: transactionsLoading,
+    error: transactionsError,
+    currentPage: transactionsCurrentPage,
+    totalPages: transactionsTotalPages,
+    totalDocs: transactionsTotalDocs,
+    limit: transactionsLimit,
+    filters: transactionFilters,
+    setFilters: setTransactionFilters,
+    setCurrentPage: setTransactionCurrentPage,
+    fetchUserTransactions,
+    clearError: clearTransactionError,
+    resetStore: resetTransactionStore
+  } = useTransactionStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -64,7 +85,32 @@ const SingleUserPage: React.FC = () => {
     };
 
     fetchUser();
+    
+    // Reset transaction store when component mounts or user changes
+    resetTransactionStore();
   }, [id]);
+
+  // Fetch transactions when transactions tab is active
+  useEffect(() => {
+    if (activeTab === 'transactions' && id) {
+      fetchUserTransactions(id, transactionsCurrentPage, transactionFilters.searchTerm);
+    }
+  }, [activeTab, id, transactionsCurrentPage, transactionFilters.status, transactionFilters.giftStatus, transactionFilters.paymentMethod]);
+
+  // Handle transaction search with debounce
+  useEffect(() => {
+    if (activeTab === 'transactions' && id) {
+      const timeoutId = setTimeout(() => {
+        if (transactionsCurrentPage === 1) {
+          fetchUserTransactions(id, 1, transactionFilters.searchTerm);
+        } else {
+          setTransactionCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [transactionFilters.searchTerm]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'lock' | 'unlock', userId: string, userName: string) => {
@@ -121,6 +167,63 @@ const SingleUserPage: React.FC = () => {
       console.error(`Error ${modalState.type}ing user:`, err);
       closeConfirmationModal();
     }
+  };
+
+  // Transaction pagination handlers
+  const handleTransactionPreviousPage = () => {
+    if (transactionsCurrentPage > 1) {
+      setTransactionCurrentPage(transactionsCurrentPage - 1);
+    }
+  };
+
+  const handleTransactionNextPage = () => {
+    if (transactionsCurrentPage < transactionsTotalPages) {
+      setTransactionCurrentPage(transactionsCurrentPage + 1);
+    }
+  };
+
+  // Handle transaction filter changes
+  const handleTransactionFilterChange = (key: string, value: string) => {
+    setTransactionFilters({ [key]: value });
+    if (transactionsCurrentPage !== 1) {
+      setTransactionCurrentPage(1);
+    }
+  };
+
+  // Clear transaction filters
+  const clearTransactionFilters = () => {
+    setTransactionFilters({
+      status: 'All',
+      giftStatus: 'All',
+      paymentMethod: 'All',
+      searchTerm: ''
+    });
+    if (transactionsCurrentPage !== 1) {
+      setTransactionCurrentPage(1);
+    }
+  };
+
+  const getTransactionStatusColor = (status: TransactionStatus) => {
+    switch (status) {
+      case TransactionStatus.SUCCESSFUL:
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case TransactionStatus.PENDING:
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case TransactionStatus.FAILED:
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency === 'NGN' ? 'NGN' : 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+    return formatter.format(amount);
   };
 
   // Get modal configuration based on action type
@@ -393,10 +496,157 @@ const SingleUserPage: React.FC = () => {
           )}
 
           {activeTab === 'transactions' && (
-            <div className="text-center py-12">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">User Transactions</h3>
-              <p className="text-gray-500 dark:text-dark-400">Transaction history will be displayed here.</p>
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!transactionsError}
+                message={transactionsError || ''}
+                onClose={clearTransactionError}
+              />
+
+              {/* Transaction Filters */}
+              <FilterBar
+                filters={[
+                  {
+                    key: 'status',
+                    label: 'Status',
+                    value: transactionFilters.status,
+                    icon: Filter,
+                    options: [
+                      { value: 'All', label: 'All Status' },
+                      { value: TransactionStatus.SUCCESSFUL, label: 'Successful' },
+                      { value: TransactionStatus.PENDING, label: 'Pending' },
+                      { value: TransactionStatus.FAILED, label: 'Failed' }
+                    ]
+                  },
+                  {
+                    key: 'giftStatus',
+                    label: 'Gift Status',
+                    value: transactionFilters.giftStatus,
+                    icon: Gift,
+                    options: [
+                      { value: 'All', label: 'All Types' },
+                      { value: 'gift', label: 'Gift' },
+                      { value: 'not-gift', label: 'Not Gift' }
+                    ]
+                  },
+                  {
+                    key: 'paymentMethod',
+                    label: 'Payment Method',
+                    value: transactionFilters.paymentMethod,
+                    icon: CreditCard,
+                    options: [
+                      { value: 'All', label: 'All Methods' },
+                      { value: PaymentMethod.FLUTTERWAVE, label: 'Flutterwave' },
+                      { value: PaymentMethod.STRIPE, label: 'Stripe' }
+                    ]
+                  }
+                ]}
+                onFilterChange={handleTransactionFilterChange}
+                onClearFilters={clearTransactionFilters}
+                searchValue={transactionFilters.searchTerm}
+                onSearchChange={(value) => handleTransactionFilterChange('searchTerm', value)}
+                searchPlaceholder="Search by event name, payment reference..."
+              />
+
+              {/* Transactions Table */}
+              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden">
+                {transactionsLoading ? (
+                  <LoadingSpinner />
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">No Transactions Found</h3>
+                    <p className="text-gray-500 dark:text-dark-400">This user hasn't made any transactions yet.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-dark-700">
+                          <tr>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Event
+                            </th>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Payment Method
+                            </th>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                              Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
+                          {transactions.map((transaction) => (
+                            <tr key={transaction._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
+                                    {transaction.eventName}
+                                  </div>
+                                  <div className="text-sm text-gray-500 dark:text-dark-400">
+                                    {new Date(transaction.eventDate).toLocaleDateString()} at {transaction.eventTime}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-dark-100">
+                                {formatCurrency(transaction.amount, transaction.currency)}
+                              </td>
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center space-x-2">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    transaction.paymentMethod === PaymentMethod.STRIPE ? 'bg-purple-500' : 'bg-blue-500'
+                                  }`}></div>
+                                  <span className="text-sm text-gray-900 dark:text-dark-100 capitalize">
+                                    {transaction.paymentMethod}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTransactionStatusColor(transaction.status)}`}>
+                                  {transaction.status}
+                                </span>
+                              </td>
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  transaction.isGift 
+                                    ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' 
+                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                }`}>
+                                  {transaction.isGift ? 'Gift' : 'Purchase'}
+                                </span>
+                              </td>
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
+                                {new Date(transaction.createdAt).toLocaleDateString()}
+                              </td>
+                              
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    <Pagination
+                      currentPage={transactionsCurrentPage}
+                      totalPages={transactionsTotalPages}
+                      totalDocs={transactionsTotalDocs}
+                      limit={transactionsLimit}
+                      onPreviousPage={handleTransactionPreviousPage}
+                      onNextPage={handleTransactionNextPage}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           )}
 
