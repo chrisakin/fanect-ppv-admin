@@ -77,7 +77,7 @@ export const useEventStore = create<EventState>((set, get) => ({
     set((state) => ({
       formData: { ...state.formData, ...data },
       // Clear related errors when data changes
-      errors: Object.keys(data).reduce((acc, key) => {
+      errors: Object.keys(data).reduce((_acc, key) => {
         const newErrors = { ...state.errors };
         delete newErrors[key];
         return newErrors;
@@ -103,7 +103,7 @@ export const useEventStore = create<EventState>((set, get) => ({
 
   removeFilePreview: (field) => {
     set((state) => {
-      const newPreviews = { ...state.filePreviews };
+      const newPreviews = { ...state.filePreviews } as any;
       delete newPreviews[field];
       return { filePreviews: newPreviews };
     });
@@ -130,7 +130,7 @@ export const useEventStore = create<EventState>((set, get) => ({
         date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
         time: event.time || '',
         description: event.description || '',
-        prices: event.prices?.length > 0 ? event.prices : [{ currency: Currency.USD, amount: 0 }],
+        prices: event.prices?.length > 0 ? event.prices : [{ currency: Currency.USD, amount: 0 }] as any,
         haveBroadcastRoom: event.haveBroadcastRoom || false,
         broadcastSoftware: event.broadcastSoftware || '',
         scheduledTestDate: event.scheduledTestDate ? new Date(event.scheduledTestDate).toISOString().split('T')[0] : '',
@@ -235,7 +235,7 @@ export const useEventStore = create<EventState>((set, get) => ({
         date: formData.date,
         time: formData.time,
         description: formData.description,
-        prices: formData.prices.filter(price => price.currency !== Currency.NONE),
+        prices: formData.prices.filter(price => price.currency !== Currency.NONE) as any,
         haveBroadcastRoom: formData.haveBroadcastRoom,
         broadcastSoftware: formData.broadcastSoftware,
         scheduledTestDate: formData.scheduledTestDate,

@@ -614,7 +614,6 @@ const SingleEventPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={modalState.isOpen}
         onClose={closeConfirmationModal}

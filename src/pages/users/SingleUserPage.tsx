@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail, Filter, Search, Gift } from 'lucide-react';
+import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail, Filter, Gift } from 'lucide-react';
 import { userService, ApiUser } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
 import { useTransactionStore } from '../../store/transactionStore';

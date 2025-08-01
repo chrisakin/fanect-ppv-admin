@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { transactionService } from '../services/transactionService';
-import { UserTransaction, TransactionFilters, TransactionStatus, PaymentMethod } from '../types/transaction';
+import { UserTransaction, TransactionFilters } from '../types/transaction';
 
 interface TransactionState {
   transactions: UserTransaction[];
