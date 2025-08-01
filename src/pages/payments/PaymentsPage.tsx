@@ -1,113 +1,225 @@
 import React, { useState } from 'react';
-import { Transaction } from '../../types';
-import { Search, Filter, RefreshCw, AlertTriangle, Calendar, DollarSign } from 'lucide-react';
+import { Search, Filter, RefreshCw, AlertTriangle, Calendar, DollarSign, Gift } from 'lucide-react';
+import { TransactionTable } from '../../components/transactions/TransactionTable';
+import { FilterBar } from '../../components/ui/filter-bar';
+import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
+import { UserTransaction, TransactionStatus, PaymentMethod } from '../../types/transaction';
 
 const PaymentsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [gatewayFilter, setGatewayFilter] = useState('All');
-  const [dateFilter, setDateFilter] = useState('');
+  const [filters, setFilters] = useState({
+    status: 'All',
+    giftStatus: 'All',
+    paymentMethod: 'All',
+    searchTerm: '',
+    dateRange: { startDate: null as string | null, endDate: null as string | null }
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading] = useState(false);
 
-  const transactions: Transaction[] = [
+  // Mock data - replace with actual API call
+  const transactions: UserTransaction[] = [
     {
-      id: 'txn_001',
+      _id: 'txn_001',
+      user: 'user_001',
       eventName: 'Tech Conference 2024',
-      userName: 'Alice Johnson',
+      eventDate: '2024-01-15',
+      eventTime: '10:30',
+      eventStatus: 'Live',
+      eventAdminStatus: 'Approved',
+      eventId: 'event_001',
       amount: 49.99,
-      gateway: 'Stripe',
-      status: 'Completed',
-      date: new Date('2024-01-15T10:30:00'),
-      type: 'StreamPass'
+      currency: 'USD',
+      paymentMethod: PaymentMethod.STRIPE,
+      paymentReference: 'ref_001',
+      status: TransactionStatus.SUCCESSFUL,
+      isGift: false,
+      createdAt: '2024-01-15T10:30:00',
+      __v: 0
     },
     {
-      id: 'txn_002',
+      _id: 'txn_002',
+      user: 'user_002',
       eventName: 'Music Festival Live',
-      userName: 'Bob Smith',
+      eventDate: '2024-01-14',
+      eventTime: '16:45',
+      eventStatus: 'Upcoming',
+      eventAdminStatus: 'Approved',
+      eventId: 'event_002',
       amount: 29.99,
-      gateway: 'Paystack',
-      status: 'Pending',
-      date: new Date('2024-01-14T16:45:00'),
-      type: 'Ticket'
+      currency: 'USD',
+      paymentMethod: PaymentMethod.FLUTTERWAVE,
+      paymentReference: 'ref_002',
+      status: TransactionStatus.PENDING,
+      isGift: false,
+      createdAt: '2024-01-14T16:45:00',
+      __v: 0
     },
     {
-      id: 'txn_003',
+      _id: 'txn_003',
+      user: 'user_003',
       eventName: 'Startup Pitch Night',
-      userName: 'Carol Williams',
+      eventDate: '2024-01-13',
+      eventTime: '08:15',
+      eventStatus: 'Past',
+      eventAdminStatus: 'Approved',
+      eventId: 'event_003',
       amount: 19.99,
-      gateway: 'Stripe',
-      status: 'Failed',
-      date: new Date('2024-01-13T08:15:00'),
-      type: 'Gift'
+      currency: 'USD',
+      paymentMethod: PaymentMethod.STRIPE,
+      paymentReference: 'ref_003',
+      status: TransactionStatus.FAILED,
+      isGift: true,
+      createdAt: '2024-01-13T08:15:00',
+      __v: 0
     },
     {
-      id: 'txn_004',
+      _id: 'txn_004',
+      user: 'user_004',
       eventName: 'Tech Conference 2024',
-      userName: 'David Brown',
+      eventDate: '2024-01-12',
+      eventTime: '14:20',
+      eventStatus: 'Live',
+      eventAdminStatus: 'Approved',
+      eventId: 'event_001',
       amount: 99.99,
-      gateway: 'Paystack',
-      status: 'Completed',
-      date: new Date('2024-01-12T14:20:00'),
-      type: 'StreamPass'
+      currency: 'USD',
+      paymentMethod: PaymentMethod.FLUTTERWAVE,
+      paymentReference: 'ref_004',
+      status: TransactionStatus.SUCCESSFUL,
+      isGift: false,
+      createdAt: '2024-01-12T14:20:00',
+      __v: 0
     }
   ];
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.userName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || transaction.status === statusFilter;
-    const matchesGateway = gatewayFilter === 'All' || transaction.gateway === gatewayFilter;
-    const matchesDate = !dateFilter || transaction.date.toISOString().startsWith(dateFilter);
+    const matchesSearch = transaction.eventName.toLowerCase().includes(filters.searchTerm.toLowerCase());
+    const matchesStatus = filters.status === 'All' || transaction.status === filters.status;
+    const matchesGiftStatus = filters.giftStatus === 'All' || 
+      (filters.giftStatus === 'gift' && transaction.isGift) ||
+      (filters.giftStatus === 'not-gift' && !transaction.isGift);
+    const matchesPaymentMethod = filters.paymentMethod === 'All' || transaction.paymentMethod === filters.paymentMethod;
     
-    return matchesSearch && matchesStatus && matchesGateway && matchesDate;
+    let matchesDateRange = true;
+    if (filters.dateRange.startDate || filters.dateRange.endDate) {
+      const transactionDate = new Date(transaction.createdAt);
+      if (filters.dateRange.startDate) {
+        matchesDateRange = matchesDateRange && transactionDate >= new Date(filters.dateRange.startDate);
+      }
+      if (filters.dateRange.endDate) {
+        matchesDateRange = matchesDateRange && transactionDate <= new Date(filters.dateRange.endDate);
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesGiftStatus && matchesPaymentMethod && matchesDateRange;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'StreamPass':
-        return 'bg-purple-100 text-purple-800';
-      case 'Ticket':
-        return 'bg-blue-100 text-blue-800';
-      case 'Gift':
-        return 'bg-pink-100 text-pink-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const handleRefund = (transactionId: string) => {
-    console.log('Refunding transaction:', transactionId);
-    // Implementation for refund
-  };
-
-  const flagTransaction = (transactionId: string) => {
-    console.log('Flagging transaction:', transactionId);
-    // Implementation for flagging
-  };
-
   const totalRevenue = filteredTransactions
-    .filter(t => t.status === 'Completed')
+    .filter(t => t.status === TransactionStatus.SUCCESSFUL)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const pendingAmount = filteredTransactions
-    .filter(t => t.status === 'Pending')
+    .filter(t => t.status === TransactionStatus.PENDING)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const failedAmount = filteredTransactions
-    .filter(t => t.status === 'Failed')
+    .filter(t => t.status === TransactionStatus.FAILED)
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      setFilters(prev => ({ ...prev, dateRange: JSON.parse(value) }));
+    } else {
+      setFilters(prev => ({ ...prev, [key]: value }));
+    }
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      status: 'All',
+      giftStatus: 'All',
+      paymentMethod: 'All',
+      searchTerm: '',
+      dateRange: { startDate: null, endDate: null }
+    });
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    // Mock total pages - replace with actual pagination logic
+    const totalPages = Math.ceil(filteredTransactions.length / 10);
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Filter configuration
+  const filterConfigs = [
+    {
+      key: 'status',
+      label: 'Status',
+      value: filters.status,
+      icon: Filter,
+      options: [
+        { value: 'All', label: 'All Status' },
+        { value: TransactionStatus.SUCCESSFUL, label: 'Successful' },
+        { value: TransactionStatus.PENDING, label: 'Pending' },
+        { value: TransactionStatus.FAILED, label: 'Failed' }
+      ]
+    },
+    {
+      key: 'giftStatus',
+      label: 'Gift Status',
+      value: filters.giftStatus,
+      icon: Gift,
+      options: [
+        { value: 'All', label: 'All Types' },
+        { value: 'gift', label: 'Gift' },
+        { value: 'not-gift', label: 'Not Gift' }
+      ]
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Payment Method',
+      value: filters.paymentMethod,
+      options: [
+        { value: 'All', label: 'All Methods' },
+        { value: PaymentMethod.FLUTTERWAVE, label: 'Flutterwave' },
+        { value: PaymentMethod.STRIPE, label: 'Stripe' }
+      ]
+    },
+    {
+      key: 'dateRange',
+      label: 'Date Range',
+      value: JSON.stringify(filters.dateRange),
+      type: 'custom' as const,
+      icon: Calendar,
+      component: (
+        <CustomDateRangePicker
+          value={filters.dateRange}
+          onChange={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
+          placeholder="Select date range"
+          className="h-10"
+        />
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -158,150 +270,30 @@ const PaymentsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Status</option>
-            <option value="Completed">Completed</option>
-            <option value="Pending">Pending</option>
-            <option value="Failed">Failed</option>
-          </select>
-
-          <select
-            value={gatewayFilter}
-            onChange={(e) => setGatewayFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Gateways</option>
-            <option value="Stripe">Stripe</option>
-            <option value="Paystack">Paystack</option>
-          </select>
-
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterBar
+        filters={filterConfigs}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        searchValue={filters.searchTerm}
+        onSearchChange={(value) => handleFilterChange('searchTerm', value)}
+        searchPlaceholder="Search transactions..."
+      />
 
       {/* Transactions Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Transaction ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Event
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gateway
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                    {transaction.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.eventName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.userName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${transaction.amount.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        transaction.gateway === 'Stripe' ? 'bg-purple-500' : 'bg-blue-500'
-                      }`}></div>
-                      <span>{transaction.gateway}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(transaction.type)}`}>
-                      {transaction.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                      {transaction.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.date.toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {transaction.status === 'Completed' && (
-                        <button
-                          onClick={() => handleRefund(transaction.id)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Refund
-                        </button>
-                      )}
-                      <button
-                        onClick={() => flagTransaction(transaction.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Flag
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TransactionTable
+          transactions={filteredTransactions}
+          loading={loading}
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredTransactions.length / 10)}
+          totalDocs={filteredTransactions.length}
+          limit={10}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          showUserColumn={true}
+          emptyMessage="No Transactions Found"
+          emptyDescription="No transactions match your current filters."
+        />
       </div>
     </div>
   );

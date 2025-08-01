@@ -5,6 +5,8 @@ interface UserFilters {
   status: UserStatus | 'All';
   locked: 'All' | 'Locked' | 'Not Locked';
   searchTerm: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface UserState {
@@ -41,7 +43,9 @@ interface UserState {
 const initialFilters: UserFilters = {
   status: 'All',
   locked: 'All',
-  searchTerm: ''
+  searchTerm: '',
+  startDate: '',
+  endDate: ''
 };
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -75,7 +79,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       const apiFilters = {
         status: filters.status,
         searchTerm: searchTerm.trim(),
-        locked: filters.locked
+        locked: filters.locked,
+        startDate: filters.startDate,
+        endDate: filters.endDate
       };
       
       const response = await userService.getAllUsers(page, limit, apiFilters);

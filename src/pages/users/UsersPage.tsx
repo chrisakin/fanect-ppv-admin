@@ -10,6 +10,7 @@ import { Pagination } from '../../components/ui/pagination';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { ActionDropdown } from '../../components/ui/action-dropdown';
 import { FilterBar } from '../../components/ui/filter-bar';
+import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 
 const UsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -140,7 +141,16 @@ const UsersPage: React.FC = () => {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
-    setFilters({ [key]: value });
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setFilters({ [key]: value });
+    }
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
@@ -151,7 +161,9 @@ const UsersPage: React.FC = () => {
     setFilters({
       status: 'All',
       locked: 'All',
-      searchTerm: ''
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
     });
     if (currentPage !== 1) {
       setCurrentPage(1);
@@ -227,6 +239,28 @@ const UsersPage: React.FC = () => {
         { value: 'Locked', label: 'Locked' },
         { value: 'Not Locked', label: 'Not Locked' }
       ]
+    },
+    {
+      key: 'dateRange',
+      label: 'Join Date Range',
+      value: JSON.stringify({
+        startDate: filters.startDate || null,
+        endDate: filters.endDate || null
+      }),
+      type: 'custom' as const,
+      component: (
+        <CustomDateRangePicker
+          value={{
+            startDate: filters.startDate || null,
+            endDate: filters.endDate || null
+          }}
+          onChange={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
+          placeholder="Select join date range"
+          className="h-10"
+        />
+      )
     }
   ];
 

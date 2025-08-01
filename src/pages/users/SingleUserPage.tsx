@@ -9,8 +9,9 @@ import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
-import { Pagination } from '../../components/ui/pagination';
 import { FilterBar } from '../../components/ui/filter-bar';
+import { TransactionTable } from '../../components/transactions/TransactionTable';
+import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 
 const SingleUserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -184,7 +185,16 @@ const SingleUserPage: React.FC = () => {
 
   // Handle transaction filter changes
   const handleTransactionFilterChange = (key: string, value: string) => {
-    setTransactionFilters({ [key]: value });
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setTransactionFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setTransactionFilters({ [key]: value });
+    }
     if (transactionsCurrentPage !== 1) {
       setTransactionCurrentPage(1);
     }
@@ -196,34 +206,13 @@ const SingleUserPage: React.FC = () => {
       status: 'All',
       giftStatus: 'All',
       paymentMethod: 'All',
-      searchTerm: ''
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
     });
     if (transactionsCurrentPage !== 1) {
       setTransactionCurrentPage(1);
     }
-  };
-
-  const getTransactionStatusColor = (status: TransactionStatus) => {
-    switch (status) {
-      case TransactionStatus.SUCCESSFUL:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case TransactionStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case TransactionStatus.FAILED:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
-    }
-  };
-
-  const formatCurrency = (amount: number, currency: string) => {
-    const formatter = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency === 'NGN' ? 'NGN' : 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
-    return formatter.format(amount);
   };
 
   // Get modal configuration based on action type
@@ -540,6 +529,28 @@ const SingleUserPage: React.FC = () => {
                       { value: PaymentMethod.FLUTTERWAVE, label: 'Flutterwave' },
                       { value: PaymentMethod.STRIPE, label: 'Stripe' }
                     ]
+                  },
+                  {
+                    key: 'dateRange',
+                    label: 'Date Range',
+                    value: JSON.stringify({
+                      startDate: transactionFilters.startDate || null,
+                      endDate: transactionFilters.endDate || null
+                    }),
+                    type: 'custom' as const,
+                    component: (
+                      <CustomDateRangePicker
+                        value={{
+                          startDate: transactionFilters.startDate || null,
+                          endDate: transactionFilters.endDate || null
+                        }}
+                        onChange={(dateRange) => 
+                          handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))
+                        }
+                        placeholder="Select date range"
+                        className="h-10"
+                      />
+                    )
                   }
                 ]}
                 onFilterChange={handleTransactionFilterChange}
@@ -551,101 +562,19 @@ const SingleUserPage: React.FC = () => {
 
               {/* Transactions Table */}
               <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden">
-                {transactionsLoading ? (
-                  <LoadingSpinner />
-                ) : transactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">No Transactions Found</h3>
-                    <p className="text-gray-500 dark:text-dark-400">This user hasn't made any transactions yet.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-dark-700">
-                          <tr>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Event
-                            </th>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Amount
-                            </th>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Payment Method
-                            </th>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Type
-                            </th>
-                            <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                              Date
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
-                          {transactions.map((transaction) => (
-                            <tr key={transaction._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                                    {transaction.eventName}
-                                  </div>
-                                  <div className="text-sm text-gray-500 dark:text-dark-400">
-                                    {new Date(transaction.eventDate).toLocaleDateString()} at {transaction.eventTime}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-dark-100">
-                                {formatCurrency(transaction.amount, transaction.currency)}
-                              </td>
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center space-x-2">
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    transaction.paymentMethod === PaymentMethod.STRIPE ? 'bg-purple-500' : 'bg-blue-500'
-                                  }`}></div>
-                                  <span className="text-sm text-gray-900 dark:text-dark-100 capitalize">
-                                    {transaction.paymentMethod}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTransactionStatusColor(transaction.status)}`}>
-                                  {transaction.status}
-                                </span>
-                              </td>
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  transaction.isGift 
-                                    ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' 
-                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                                }`}>
-                                  {transaction.isGift ? 'Gift' : 'Purchase'}
-                                </span>
-                              </td>
-                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
-                                {new Date(transaction.createdAt).toLocaleDateString()}
-                              </td>
-                              
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <Pagination
-                      currentPage={transactionsCurrentPage}
-                      totalPages={transactionsTotalPages}
-                      totalDocs={transactionsTotalDocs}
-                      limit={transactionsLimit}
-                      onPreviousPage={handleTransactionPreviousPage}
-                      onNextPage={handleTransactionNextPage}
-                    />
-                  </>
-                )}
+                <TransactionTable
+                  transactions={transactions}
+                  loading={transactionsLoading}
+                  currentPage={transactionsCurrentPage}
+                  totalPages={transactionsTotalPages}
+                  totalDocs={transactionsTotalDocs}
+                  limit={transactionsLimit}
+                  onPreviousPage={handleTransactionPreviousPage}
+                  onNextPage={handleTransactionNextPage}
+                  showUserColumn={false}
+                  emptyMessage="No Transactions Found"
+                  emptyDescription="This user hasn't made any transactions yet."
+                />
               </div>
             </div>
           )}

@@ -12,8 +12,9 @@ interface FilterConfig {
   options: FilterOption[];
   value: string;
   icon?: React.ComponentType<{ className?: string }>;
-  type?: 'select' | 'date' | 'search';
+  type?: 'select' | 'date' | 'search' | 'custom';
   placeholder?: string;
+  component?: React.ReactNode;
 }
 
 interface FilterBarProps {
@@ -54,7 +55,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {filters.map((filter) => (
           <div key={filter.key} className="flex items-center space-x-2">
             {filter.icon && <filter.icon className="w-4 h-4 text-gray-500 dark:text-dark-400 flex-shrink-0" />}
-            {filter.type === 'date' ? (
+            {filter.type === 'custom' ? (
+              filter.component
+            ) : filter.type === 'date' ? (
               <input
                 type="date"
                 value={filter.value}

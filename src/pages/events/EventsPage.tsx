@@ -9,6 +9,7 @@ import { Pagination } from '../../components/ui/pagination';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { ActionDropdown } from '../../components/ui/action-dropdown';
 import { FilterBar } from '../../components/ui/filter-bar';
+import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -49,8 +50,7 @@ const EventsPage: React.FC = () => {
   const [filters, setFilters] = useState({
     status: 'All',
     adminStatus: 'All',
-    startDate: '',
-    endDate: '',
+    dateRange: { startDate: null as string | null, endDate: null as string | null },
     searchTerm: ''
   });
 
@@ -61,8 +61,8 @@ const EventsPage: React.FC = () => {
       setError(null);
       
       const apiFilters = {
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        startDate: filters.dateRange.startDate || '',
+        endDate: filters.dateRange.endDate || '',
         status: filters.status,
         adminStatus: filters.adminStatus,
         searchTerm: searchTerm.trim()
@@ -84,7 +84,7 @@ const EventsPage: React.FC = () => {
   // Load events on component mount, page change, or filter change
   useEffect(() => {
     fetchEvents(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status, filters.adminStatus, filters.startDate, filters.endDate]);
+  }, [currentPage, filters.status, filters.adminStatus, filters.dateRange.startDate, filters.dateRange.endDate]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -284,7 +284,11 @@ const EventsPage: React.FC = () => {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    if (key === 'dateRange') {
+      setFilters(prev => ({ ...prev, dateRange: JSON.parse(value) }));
+    } else {
+      setFilters(prev => ({ ...prev, [key]: value }));
+    }
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
@@ -295,8 +299,7 @@ const EventsPage: React.FC = () => {
     setFilters({
       status: 'All',
       adminStatus: 'All',
-      startDate: '',
-      endDate: '',
+      dateRange: { startDate: null, endDate: null },
       searchTerm: ''
     });
     if (currentPage !== 1) {
@@ -399,19 +402,21 @@ const EventsPage: React.FC = () => {
       ]
     },
     {
-      key: 'startDate',
-      label: 'Start Date',
-      value: filters.startDate,
-      type: 'date' as const,
+      key: 'dateRange',
+      label: 'Date Range',
+      value: JSON.stringify(filters.dateRange),
+      type: 'custom' as const,
       icon: Calendar,
-      placeholder: 'Start Date'
-    },
-    {
-      key: 'endDate',
-      label: 'End Date',
-      value: filters.endDate,
-      type: 'date' as const,
-      placeholder: 'End Date'
+      component: (
+        <CustomDateRangePicker
+          value={filters.dateRange}
+          onChange={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
+          placeholder="Select date range"
+          className="h-10"
+        />
+      )
     }
   ];
 

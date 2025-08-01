@@ -28,13 +28,17 @@ interface TransactionState {
   fetchUserTransactions: (userId: string, page?: number, searchTerm?: string) => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
+  startDate: string;
+  endDate: string;
 }
 
 const initialFilters: TransactionFilters = {
   status: 'All',
   giftStatus: 'All',
   paymentMethod: 'All',
-  searchTerm: ''
+  searchTerm: '',
+  startDate: '',
+  endDate: ''
 };
 
 export const useTransactionStore = create<TransactionState>((set, get) => ({
@@ -76,7 +80,9 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         status: filters.status,
         giftStatus: filters.giftStatus,
         paymentMethod: filters.paymentMethod,
-        searchTerm: searchTerm.trim()
+        searchTerm: searchTerm.trim(),
+        startDate: filters.startDate,
+        endDate: filters.endDate
       };
       
       const response = await transactionService.getUserTransactions(userId, page, limit, apiFilters);

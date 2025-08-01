@@ -44,4 +44,6 @@ export interface TransactionFilters {
   giftStatus: 'All' | 'gift' | 'not-gift';
   paymentMethod: PaymentMethod | 'All';
   searchTerm: string;
+  startDate: string;
+  endDate: string;
 }
