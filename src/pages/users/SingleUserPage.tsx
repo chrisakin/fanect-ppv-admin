@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail, Filter, Gift } from 'lucide-react';
+import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail } from 'lucide-react';
 import { userService, ApiUser } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
 import { useTransactionStore } from '../../store/transactionStore';
-import { TransactionStatus, PaymentMethod } from '../../types/transaction';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
-import { FilterBar } from '../../components/ui/filter-bar';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
-import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 
 const SingleUserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,7 +93,7 @@ const SingleUserPage: React.FC = () => {
     if (activeTab === 'transactions' && id) {
       fetchUserTransactions(id, transactionsCurrentPage, transactionFilters.searchTerm);
     }
-  }, [activeTab, id, transactionsCurrentPage, transactionFilters.status, transactionFilters.giftStatus, transactionFilters.paymentMethod]);
+  }, [activeTab, id, transactionsCurrentPage, transactionFilters.status, transactionFilters.giftStatus, transactionFilters.paymentMethod, transactionFilters.startDate, transactionFilters.endDate]);
 
   // Handle transaction search with debounce
   useEffect(() => {
@@ -493,89 +490,24 @@ const SingleUserPage: React.FC = () => {
                 onClose={clearTransactionError}
               />
 
-              {/* Transaction Filters */}
-              <FilterBar
-                filters={[
-                  {
-                    key: 'dateRange',
-                    label: 'Date Range',
-                    value: JSON.stringify({
-                      startDate: transactionFilters.startDate || null,
-                      endDate: transactionFilters.endDate || null
-                    }),
-                    type: 'custom' as const,
-                    component: (
-                      <CustomDateRangePicker
-                        value={{
-                          startDate: transactionFilters.startDate || null,
-                          endDate: transactionFilters.endDate || null
-                        }}
-                        onChange={(dateRange) => handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))}
-                        placeholder="Select date range"
-                        className="h-10"
-                        showSearchButton={true}
-                        onSearch={(dateRange) => handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))} />
-                    ),
-                    options: []
-                  },
-                  {
-                    key: 'status',
-                    label: 'Status',
-                    value: transactionFilters.status,
-                    icon: Filter,
-                    options: [
-                      { value: 'All', label: 'All Status' },
-                      { value: TransactionStatus.SUCCESSFUL, label: 'Successful' },
-                      { value: TransactionStatus.PENDING, label: 'Pending' },
-                      { value: TransactionStatus.FAILED, label: 'Failed' }
-                    ]
-                  },
-                  {
-                    key: 'giftStatus',
-                    label: 'Gift Status',
-                    value: transactionFilters.giftStatus,
-                    icon: Gift,
-                    options: [
-                      { value: 'All', label: 'All Types' },
-                      { value: 'gift', label: 'Gift' },
-                      { value: 'not-gift', label: 'Not Gift' }
-                    ]
-                  },
-                  {
-                    key: 'paymentMethod',
-                    label: 'Payment Method',
-                    value: transactionFilters.paymentMethod,
-                    icon: CreditCard,
-                    options: [
-                      { value: 'All', label: 'All Methods' },
-                      { value: PaymentMethod.FLUTTERWAVE, label: 'Flutterwave' },
-                      { value: PaymentMethod.STRIPE, label: 'Stripe' }
-                    ]
-                  },
-                ]}
+              {/* Transactions Table with Filters */}
+              <TransactionTable
+                transactions={transactions}
+                loading={transactionsLoading}
+                currentPage={transactionsCurrentPage}
+                totalPages={transactionsTotalPages}
+                totalDocs={transactionsTotalDocs}
+                limit={transactionsLimit}
+                onPreviousPage={handleTransactionPreviousPage}
+                onNextPage={handleTransactionNextPage}
+                showUserColumn={false}
+                emptyMessage="No Transactions Found"
+                emptyDescription="This user hasn't made any transactions yet."
+                filters={transactionFilters}
                 onFilterChange={handleTransactionFilterChange}
                 onClearFilters={clearTransactionFilters}
-                searchValue={transactionFilters.searchTerm}
-                onSearchChange={(value) => handleTransactionFilterChange('searchTerm', value)}
-                searchPlaceholder="Search by event name, payment reference..."
+                showFilters={true}
               />
-
-              {/* Transactions Table */}
-              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden">
-                <TransactionTable
-                  transactions={transactions}
-                  loading={transactionsLoading}
-                  currentPage={transactionsCurrentPage}
-                  totalPages={transactionsTotalPages}
-                  totalDocs={transactionsTotalDocs}
-                  limit={transactionsLimit}
-                  onPreviousPage={handleTransactionPreviousPage}
-                  onNextPage={handleTransactionNextPage}
-                  showUserColumn={false}
-                  emptyMessage="No Transactions Found"
-                  emptyDescription="This user hasn't made any transactions yet."
-                />
-              </div>
             </div>
           )}
 

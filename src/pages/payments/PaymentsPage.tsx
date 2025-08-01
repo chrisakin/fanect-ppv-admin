@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, RefreshCw, AlertTriangle, Calendar, DollarSign, Gift } from 'lucide-react';
+import { RefreshCw, AlertTriangle, DollarSign } from 'lucide-react';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
-import { FilterBar } from '../../components/ui/filter-bar';
-import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 import { UserTransaction, TransactionStatus, PaymentMethod } from '../../types/transaction';
 
 const PaymentsPage: React.FC = () => {
@@ -167,63 +165,15 @@ const PaymentsPage: React.FC = () => {
     }
   };
 
-  // Filter configuration
-  const filterConfigs = [
-    {
-      key: 'status',
-      label: 'Status',
-      value: filters.status,
-      icon: Filter,
-      options: [
-        { value: 'All', label: 'All Status' },
-        { value: TransactionStatus.SUCCESSFUL, label: 'Successful' },
-        { value: TransactionStatus.PENDING, label: 'Pending' },
-        { value: TransactionStatus.FAILED, label: 'Failed' }
-      ]
-    },
-    {
-      key: 'giftStatus',
-      label: 'Gift Status',
-      value: filters.giftStatus,
-      icon: Gift,
-      options: [
-        { value: 'All', label: 'All Types' },
-        { value: 'gift', label: 'Gift' },
-        { value: 'not-gift', label: 'Not Gift' }
-      ]
-    },
-    {
-      key: 'paymentMethod',
-      label: 'Payment Method',
-      value: filters.paymentMethod,
-      options: [
-        { value: 'All', label: 'All Methods' },
-        { value: PaymentMethod.FLUTTERWAVE, label: 'Flutterwave' },
-        { value: PaymentMethod.STRIPE, label: 'Stripe' }
-      ]
-    },
-    {
-      key: 'dateRange',
-      label: 'Date Range',
-      value: JSON.stringify(filters.dateRange),
-      type: 'custom' as const,
-      icon: Calendar,
-      component: (
-        <CustomDateRangePicker
-          value={filters.dateRange}
-          onChange={(dateRange) => 
-            handleFilterChange('dateRange', JSON.stringify(dateRange))
-          }
-          placeholder="Select date range"
-          className="h-10"
-          showSearchButton={true}
-          onSearch={(dateRange) => 
-            handleFilterChange('dateRange', JSON.stringify(dateRange))
-          }
-        />
-      )
-    }
-  ];
+  // Convert filters to the format expected by TransactionTable
+  const transactionFilters = {
+    status: filters.status,
+    giftStatus: filters.giftStatus,
+    paymentMethod: filters.paymentMethod,
+    searchTerm: filters.searchTerm,
+    startDate: filters.dateRange.startDate || '',
+    endDate: filters.dateRange.endDate || ''
+  };
 
   return (
     <div className="space-y-6">
@@ -273,32 +223,24 @@ const PaymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <FilterBar
-        filters={filterConfigs}
+      {/* Transactions Table with Filters */}
+      <TransactionTable
+        transactions={filteredTransactions}
+        loading={loading}
+        currentPage={currentPage}
+        totalPages={Math.ceil(filteredTransactions.length / 10)}
+        totalDocs={filteredTransactions.length}
+        limit={10}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        showUserColumn={true}
+        emptyMessage="No Transactions Found"
+        emptyDescription="No transactions match your current filters."
+        filters={transactionFilters as any}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
-        searchValue={filters.searchTerm}
-        onSearchChange={(value) => handleFilterChange('searchTerm', value)}
-        searchPlaceholder="Search transactions..."
+        showFilters={true}
       />
-
-      {/* Transactions Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <TransactionTable
-          transactions={filteredTransactions}
-          loading={loading}
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredTransactions.length / 10)}
-          totalDocs={filteredTransactions.length}
-          limit={10}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
-          showUserColumn={true}
-          emptyMessage="No Transactions Found"
-          emptyDescription="No transactions match your current filters."
-        />
-      </div>
     </div>
   );
 };
