@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, Search } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
 import { cn } from '../../lib/utils';
@@ -15,6 +15,8 @@ interface CustomDateRangePickerProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  showSearchButton?: boolean;
+  onSearch?: (dateRange: DateRange) => void;
 }
 
 const months = [
@@ -29,12 +31,15 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
   onChange,
   placeholder = "Select date range",
   disabled = false,
-  className
+  className,
+  showSearchButton = false,
+  onSearch
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectingStart, setSelectingStart] = useState(true);
+  const [tempDateRange, setTempDateRange] = useState<DateRange>(value);
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -51,31 +56,50 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
     const date = String(selectedDate.getDate()).padStart(2, "0");
     const formatted = `${year}-${month}-${date}`;
 
-    if (selectingStart || !value.startDate) {
-      onChange({
+    let newDateRange: DateRange;
+
+    if (selectingStart || !tempDateRange.startDate) {
+      newDateRange = {
         startDate: formatted,
         endDate: null
-      });
+      };
       setSelectingStart(false);
     } else {
-      const startDate = new Date(value.startDate);
+      const startDate = new Date(tempDateRange.startDate);
       const endDate = new Date(formatted);
       
       if (endDate < startDate) {
         // If end date is before start date, swap them
-        onChange({
+        newDateRange = {
           startDate: formatted,
-          endDate: value.startDate
-        });
+          endDate: tempDateRange.startDate
+        };
       } else {
-        onChange({
-          startDate: value.startDate,
+        newDateRange = {
+          startDate: tempDateRange.startDate,
           endDate: formatted
-        });
+        };
       }
-      setIsOpen(false);
       setSelectingStart(true);
     }
+
+    setTempDateRange(newDateRange);
+
+    // If not using search button, apply changes immediately
+    if (!showSearchButton) {
+      onChange(newDateRange);
+      if (newDateRange.startDate && newDateRange.endDate) {
+        setIsOpen(false);
+      }
+    }
+  };
+
+  const handleSearch = () => {
+    onChange(tempDateRange);
+    if (onSearch) {
+      onSearch(tempDateRange);
+    }
+    setIsOpen(false);
   };
 
   const handlePrevMonth = () => {
@@ -97,20 +121,22 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
   };
 
   const isDateInRange = (day: number) => {
-    if (!value.startDate || !value.endDate) return false;
+    const dateRange = showSearchButton ? tempDateRange : value;
+    if (!dateRange.startDate || !dateRange.endDate) return false;
     
     const date = new Date(currentYear, currentMonth, day);
-    const start = new Date(value.startDate);
-    const end = new Date(value.endDate);
+    const start = new Date(dateRange.startDate);
+    const end = new Date(dateRange.endDate);
     
     return date >= start && date <= end;
   };
 
   const isDateSelected = (day: number) => {
+    const dateRange = showSearchButton ? tempDateRange : value;
     const date = new Date(currentYear, currentMonth, day);
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     
-    return dateStr === value.startDate || dateStr === value.endDate;
+    return dateStr === dateRange.startDate || dateStr === dateRange.endDate;
   };
 
   const renderCalendar = () => {
@@ -151,7 +177,8 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
   };
 
   const formatDisplayDate = () => {
-    if (!value.startDate && !value.endDate) return '';
+    const dateRange = showSearchButton ? value : (showSearchButton ? tempDateRange : value);
+    if (!dateRange.startDate && !dateRange.endDate) return '';
     
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr);
@@ -162,18 +189,29 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
       });
     };
 
-    if (value.startDate && value.endDate) {
-      return `${formatDate(value.startDate)} - ${formatDate(value.endDate)}`;
-    } else if (value.startDate) {
-      return `${formatDate(value.startDate)} - Select end date`;
+    if (dateRange.startDate && dateRange.endDate) {
+      return `${formatDate(dateRange.startDate)} - ${formatDate(dateRange.endDate)}`;
+    } else if (dateRange.startDate) {
+      return `${formatDate(dateRange.startDate)} - Select end date`;
     }
     
     return '';
   };
 
   const clearDates = () => {
-    onChange({ startDate: null, endDate: null });
+    const clearedRange = { startDate: null, endDate: null };
+    setTempDateRange(clearedRange);
+    if (!showSearchButton) {
+      onChange(clearedRange);
+    }
     setSelectingStart(true);
+  };
+
+  const handleOpen = () => {
+    if (!disabled) {
+      setTempDateRange(value);
+      setIsOpen(!isOpen);
+    }
   };
 
   return (
@@ -184,7 +222,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
           placeholder={placeholder}
           readOnly
           disabled={disabled}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={handleOpen}
           className={cn("cursor-pointer pr-10 w-full", className)}
         />
         <CalendarIcon 
@@ -223,8 +261,8 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
 
           {/* Selection indicator */}
           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
-            {selectingStart && !value.startDate ? 'Select start date' : 
-             !selectingStart && value.startDate && !value.endDate ? 'Select end date' : 
+            {selectingStart && !tempDateRange.startDate ? 'Select start date' : 
+             !selectingStart && tempDateRange.startDate && !tempDateRange.endDate ? 'Select end date' : 
              'Date range selected'}
           </div>
 
@@ -253,15 +291,29 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
             >
               Clear
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              className="text-gray-600 dark:text-gray-400"
-            >
-              Close
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                className="text-gray-600 dark:text-gray-400"
+              >
+                Close
+              </Button>
+               {showSearchButton && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSearch}
+                  disabled={!tempDateRange.startDate || !tempDateRange.endDate}
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-1"
+                >
+                  <Search className="w-3 h-3" />
+                  <span>Search</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

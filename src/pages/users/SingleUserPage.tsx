@@ -497,6 +497,28 @@ const SingleUserPage: React.FC = () => {
               <FilterBar
                 filters={[
                   {
+                    key: 'dateRange',
+                    label: 'Date Range',
+                    value: JSON.stringify({
+                      startDate: transactionFilters.startDate || null,
+                      endDate: transactionFilters.endDate || null
+                    }),
+                    type: 'custom' as const,
+                    component: (
+                      <CustomDateRangePicker
+                        value={{
+                          startDate: transactionFilters.startDate || null,
+                          endDate: transactionFilters.endDate || null
+                        }}
+                        onChange={(dateRange) => handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))}
+                        placeholder="Select date range"
+                        className="h-10"
+                        showSearchButton={true}
+                        onSearch={(dateRange) => handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))} />
+                    ),
+                    options: []
+                  },
+                  {
                     key: 'status',
                     label: 'Status',
                     value: transactionFilters.status,
@@ -530,28 +552,6 @@ const SingleUserPage: React.FC = () => {
                       { value: PaymentMethod.STRIPE, label: 'Stripe' }
                     ]
                   },
-                  {
-                    key: 'dateRange',
-                    label: 'Date Range',
-                    value: JSON.stringify({
-                      startDate: transactionFilters.startDate || null,
-                      endDate: transactionFilters.endDate || null
-                    }),
-                    type: 'custom' as const,
-                    component: (
-                      <CustomDateRangePicker
-                        value={{
-                          startDate: transactionFilters.startDate || null,
-                          endDate: transactionFilters.endDate || null
-                        }}
-                        onChange={(dateRange) => 
-                          handleTransactionFilterChange('dateRange', JSON.stringify(dateRange))
-                        }
-                        placeholder="Select date range"
-                        className="h-10"
-                      />
-                    )
-                  }
                 ]}
                 onFilterChange={handleTransactionFilterChange}
                 onClearFilters={clearTransactionFilters}

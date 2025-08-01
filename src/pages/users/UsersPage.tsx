@@ -60,7 +60,7 @@ const UsersPage: React.FC = () => {
   // Load users on component mount, page change, or filter change
   useEffect(() => {
     fetchUsers(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status, filters.locked]);
+  }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -218,6 +218,32 @@ const UsersPage: React.FC = () => {
 
   // Filter configuration
   const filterConfigs = [
+     {
+      key: 'dateRange',
+      label: 'Join Date Range',
+      value: JSON.stringify({
+        startDate: filters.startDate || null,
+        endDate: filters.endDate || null
+      }),
+      type: 'custom' as const,
+      component: (
+        <CustomDateRangePicker
+          value={{
+            startDate: filters.startDate || null,
+            endDate: filters.endDate || null
+          }}
+          onChange={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
+          placeholder="Select join date range"
+          className="h-10"
+          showSearchButton={true}
+          onSearch={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
+        />
+      )
+    },
     {
       key: 'status',
       label: 'Status',
@@ -240,28 +266,6 @@ const UsersPage: React.FC = () => {
         { value: 'Not Locked', label: 'Not Locked' }
       ]
     },
-    {
-      key: 'dateRange',
-      label: 'Join Date Range',
-      value: JSON.stringify({
-        startDate: filters.startDate || null,
-        endDate: filters.endDate || null
-      }),
-      type: 'custom' as const,
-      component: (
-        <CustomDateRangePicker
-          value={{
-            startDate: filters.startDate || null,
-            endDate: filters.endDate || null
-          }}
-          onChange={(dateRange) => 
-            handleFilterChange('dateRange', JSON.stringify(dateRange))
-          }
-          placeholder="Select join date range"
-          className="h-10"
-        />
-      )
-    }
   ];
 
   return (
@@ -279,7 +283,7 @@ const UsersPage: React.FC = () => {
 
       {/* Filters */}
       <FilterBar
-        filters={filterConfigs}
+        filters={filterConfigs as any}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         searchValue={filters.searchTerm}

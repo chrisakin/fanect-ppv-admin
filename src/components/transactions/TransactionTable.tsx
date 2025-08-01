@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, Gift } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { UserTransaction, TransactionStatus, PaymentMethod } from '../../types/transaction';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';

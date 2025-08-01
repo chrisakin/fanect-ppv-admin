@@ -216,6 +216,10 @@ const PaymentsPage: React.FC = () => {
           }
           placeholder="Select date range"
           className="h-10"
+          showSearchButton={true}
+          onSearch={(dateRange) => 
+            handleFilterChange('dateRange', JSON.stringify(dateRange))
+          }
         />
       )
     }

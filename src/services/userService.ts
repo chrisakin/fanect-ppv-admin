@@ -44,6 +44,8 @@ export const userService = {
       status?: UserStatus | 'All';
       searchTerm?: string;
       locked?: 'All' | 'Locked' | 'Not Locked';
+      startDate?: string;
+      endDate?: string;
     }
   ): Promise<UsersResponse> => {
     let url = `/admin/users/all-users?page=${page}&limit=${limit}`;
@@ -58,6 +60,12 @@ export const userService = {
       if (filters.locked && filters.locked !== 'All') {
         const locked = filters.locked === 'Locked' ? 'locked' : 'not-locked';
         url += `&locked=${locked}`;
+      }
+      if (filters.startDate) {
+        url += `&startDate=${filters.startDate}`;
+      }
+      if (filters.endDate) {
+        url += `&endDate=${filters.endDate}`;
       }
     }
     

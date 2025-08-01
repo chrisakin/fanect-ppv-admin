@@ -12,6 +12,8 @@ export const transactionService = {
       giftStatus?: 'All' | 'gift' | 'not-gift';
       paymentMethod?: PaymentMethod | 'All';
       searchTerm?: string;
+      startDate?: string;
+      endDate?: string;
     }
   ): Promise<UserTransactionsResponse> => {
     let url = `/admin/users/single-user-transactions/${userId}?page=${page}&limit=${limit}`;
@@ -28,6 +30,12 @@ export const transactionService = {
       }
       if (filters.searchTerm && filters.searchTerm.trim()) {
         url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
+      }
+      if (filters.startDate) {
+        url += `&startDate=${filters.startDate}`;
+      }
+      if (filters.endDate) {
+        url += `&endDate=${filters.endDate}`;
       }
     }
     

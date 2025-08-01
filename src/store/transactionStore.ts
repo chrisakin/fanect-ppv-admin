@@ -28,8 +28,6 @@ interface TransactionState {
   fetchUserTransactions: (userId: string, page?: number, searchTerm?: string) => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
-  startDate: string;
-  endDate: string;
 }
 
 const initialFilters: TransactionFilters = {
