@@ -27,6 +27,7 @@ interface EventsTableProps {
   emptyMessage?: string;
   emptyDescription?: string;
   showActions?: boolean;
+  showFullActions?: boolean;
   onViewEvent?: (eventId: string) => void;
   onEditEvent?: (eventId: string) => void;
   onApproveEvent?: (eventId: string) => void;
@@ -55,6 +56,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   emptyMessage = "No Events Found",
   emptyDescription = "No events have been created yet.",
   showActions = false,
+  showFullActions = true,
   onViewEvent,
   onEditEvent,
   onApproveEvent,
@@ -123,6 +125,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({
         label: 'Edit Event',
         onClick: () => onEditEvent(event._id)
       });
+    }
+
+    // Only show full actions if showFullActions is true
+    if (!showFullActions) {
+      return items;
     }
 
     if (event.adminStatus === 'Pending') {
@@ -239,7 +246,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       {/* Filters */}
       {showFilters && filters && onFilterChange && onClearFilters && (
         <FilterBar
-          filters={filterConfigs}
+          filters={filterConfigs as any}
           onFilterChange={onFilterChange}
           onClearFilters={onClearFilters}
           searchValue={filters.searchTerm}

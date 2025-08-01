@@ -21,7 +21,7 @@ const SingleUserPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'events' | 'activities'>('overview');
-  
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   // Store actions
   const { actionLoading, lockUser, unlockUser } = useUserStore();
   
@@ -708,8 +708,13 @@ const SingleUserPage: React.FC = () => {
                 filters={userEventFilters}
                 onFilterChange={handleUserEventFilterChange}
                 onClearFilters={clearUserEventFilters}
+                openDropdown={openDropdown}
+                onToggleDropdown={setOpenDropdown}
                 showFilters={true}
-                showActions={false}
+                showActions={true}
+                showFullActions={false}
+                onViewEvent={(eventId) => navigate(`/events/${eventId}`)}
+                onEditEvent={(eventId) => navigate(`/events/edit/${eventId}`)}
               />
             </div>
           )}
