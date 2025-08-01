@@ -449,7 +449,7 @@ const EventsPage: React.FC = () => {
 
       {/* Filters */}
       <FilterBar
-        filters={filterConfigs}
+        filters={filterConfigs as any}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         searchValue={filters.searchTerm}
@@ -464,7 +464,15 @@ const EventsPage: React.FC = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed min-w-[800px]">
+                <colgroup>
+                  <col className="w-[320px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[160px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[100px]" />
+                </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
                   <tr>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">

@@ -69,7 +69,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <select
                 value={filter.value}
                 onChange={(e) => onFilterChange(filter.key, e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 transition-colors duration-200 relative z-[9999]"
               >
                 {filter.options.map((option) => (
                   <option key={option.value} value={option.value}>

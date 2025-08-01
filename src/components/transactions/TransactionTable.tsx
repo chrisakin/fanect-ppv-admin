@@ -157,7 +157,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed min-w-[900px]">
+                <colgroup>
+                  <col className="w-[250px]" />
+                  {showUserColumn && <col className="w-[150px]" />}
+                  <col className="w-[120px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[120px]" />
+                </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
                   <tr>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">

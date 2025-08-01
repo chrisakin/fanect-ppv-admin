@@ -89,7 +89,7 @@ export const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg shadow-lg z-[9999] p-4 min-w-[280px]">
           <div className="flex items-center justify-between space-x-4">
             {/* Hours */}
             <div className="flex-1">
@@ -183,7 +183,7 @@ export const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40" 
+          className="fixed inset-0 z-[9998]" 
           onClick={() => setIsOpen(false)}
         />
       )}

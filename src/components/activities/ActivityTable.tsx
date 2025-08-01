@@ -149,7 +149,14 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed min-w-[800px]">
+                <colgroup>
+                  <col className="w-[300px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[140px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[160px]" />
+                </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
                   <tr>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">

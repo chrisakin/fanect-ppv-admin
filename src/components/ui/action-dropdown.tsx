@@ -54,7 +54,7 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({
       {isOpen && (
         <div 
           ref={dropdownRef}
-          className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 z-[60]"
+          className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 z-[9999]"
         >
           <div className="py-1">
             {items.map((item, index) => (

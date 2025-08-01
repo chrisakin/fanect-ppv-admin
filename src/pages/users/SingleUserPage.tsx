@@ -5,12 +5,14 @@ import { userService, ApiUser } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
 import { useTransactionStore } from '../../store/transactionStore';
 import { useActivityStore } from '../../store/activityStore';
+import { useUserEventStore } from '../../store/userEventStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
 import { ActivityTable } from '../../components/activities/ActivityTable';
+import { EventsTable } from '../../components/events/EventsTable';
 
 const SingleUserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +58,23 @@ const SingleUserPage: React.FC = () => {
     clearError: clearActivityError,
     resetStore: resetActivityStore
   } = useActivityStore();
+  
+  // User Event store
+  const {
+    events: userEvents,
+    loading: userEventsLoading,
+    error: userEventsError,
+    currentPage: userEventsCurrentPage,
+    totalPages: userEventsTotalPages,
+    totalDocs: userEventsTotalDocs,
+    limit: userEventsLimit,
+    filters: userEventFilters,
+    setFilters: setUserEventFilters,
+    setCurrentPage: setUserEventCurrentPage,
+    fetchUserEvents,
+    clearError: clearUserEventError,
+    resetStore: resetUserEventStore
+  } = useUserEventStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -107,6 +126,8 @@ const SingleUserPage: React.FC = () => {
     resetTransactionStore();
     // Reset activity store when component mounts or user changes
     resetActivityStore();
+    // Reset user event store when component mounts or user changes
+    resetUserEventStore();
   }, [id]);
 
   // Fetch transactions when transactions tab is active
@@ -152,6 +173,28 @@ const SingleUserPage: React.FC = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [activityFilters.searchTerm]);
+
+  // Fetch user events when events tab is active
+  useEffect(() => {
+    if (activeTab === 'events' && id) {
+      fetchUserEvents(id, userEventsCurrentPage, userEventFilters.searchTerm);
+    }
+  }, [activeTab, id, userEventsCurrentPage, userEventFilters.status, userEventFilters.adminStatus, userEventFilters.startDate, userEventFilters.endDate]);
+
+  // Handle user event search with debounce
+  useEffect(() => {
+    if (activeTab === 'events' && id) {
+      const timeoutId = setTimeout(() => {
+        if (userEventsCurrentPage === 1) {
+          fetchUserEvents(id, 1, userEventFilters.searchTerm);
+        } else {
+          setUserEventCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [userEventFilters.searchTerm]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'lock' | 'unlock', userId: string, userName: string) => {
@@ -295,6 +338,50 @@ const SingleUserPage: React.FC = () => {
     });
     if (activitiesCurrentPage !== 1) {
       setActivityCurrentPage(1);
+    }
+  };
+
+  // User Event pagination handlers
+  const handleUserEventPreviousPage = () => {
+    if (userEventsCurrentPage > 1) {
+      setUserEventCurrentPage(userEventsCurrentPage - 1);
+    }
+  };
+
+  const handleUserEventNextPage = () => {
+    if (userEventsCurrentPage < userEventsTotalPages) {
+      setUserEventCurrentPage(userEventsCurrentPage + 1);
+    }
+  };
+
+  // Handle user event filter changes
+  const handleUserEventFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setUserEventFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setUserEventFilters({ [key]: value });
+    }
+    if (userEventsCurrentPage !== 1) {
+      setUserEventCurrentPage(1);
+    }
+  };
+
+  // Clear user event filters
+  const clearUserEventFilters = () => {
+    setUserEventFilters({
+      status: 'All',
+      adminStatus: 'All',
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
+    });
+    if (userEventsCurrentPage !== 1) {
+      setUserEventCurrentPage(1);
     }
   };
 
@@ -598,10 +685,32 @@ const SingleUserPage: React.FC = () => {
           )}
 
           {activeTab === 'events' && (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">User Events</h3>
-              <p className="text-gray-500 dark:text-dark-400">Events joined by this user will be displayed here.</p>
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!userEventsError}
+                message={userEventsError || ''}
+                onClose={clearUserEventError}
+              />
+
+              {/* User Events Table with Filters */}
+              <EventsTable
+                events={userEvents}
+                loading={userEventsLoading}
+                currentPage={userEventsCurrentPage}
+                totalPages={userEventsTotalPages}
+                totalDocs={userEventsTotalDocs}
+                limit={userEventsLimit}
+                onPreviousPage={handleUserEventPreviousPage}
+                onNextPage={handleUserEventNextPage}
+                emptyMessage="No Events Found"
+                emptyDescription="This user hasn't joined any events yet."
+                filters={userEventFilters}
+                onFilterChange={handleUserEventFilterChange}
+                onClearFilters={clearUserEventFilters}
+                showFilters={true}
+                showActions={false}
+              />
             </div>
           )}
 

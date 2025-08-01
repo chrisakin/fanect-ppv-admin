@@ -261,14 +261,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
+              <table className="w-full table-fixed min-w-[800px]">
                 <colgroup>
-                  <col className="w-80" />
-                  <col className="w-48" />
-                  <col className="w-32" />
-                  <col className="w-40" />
-                  <col className="w-32" />
-                  {showActions && <col className="w-24" />}
+                  <col className="w-[320px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[160px]" />
+                  <col className="w-[120px]" />
+                  {showActions && <col className="w-[100px]" />}
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
                   <tr>

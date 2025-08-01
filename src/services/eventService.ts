@@ -111,6 +111,33 @@ export const eventService = {
     return response.data;
   },
 
+  // Get user events with pagination and filters
+  getUserEvents: async (
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      status?: string;
+      adminStatus?: string;
+      searchTerm?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<EventsResponse> => {
+    let url = `/admin/users/single-user-events/${userId}?page=${page}&limit=${limit}`;
+    
+    if (filters) {
+      if (filters.startDate) url += `&startDate=${filters.startDate}`;
+      if (filters.endDate) url += `&endDate=${filters.endDate}`;
+      if (filters.status && filters.status !== 'All') url += `&status=${filters.status}`;
+      if (filters.adminStatus && filters.adminStatus !== 'All') url += `&adminStatus=${filters.adminStatus}`;
+      if (filters.searchTerm && filters.searchTerm.trim()) url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
+    }
+    
+    const response = await api.get(url);
+    return response.data;
+  },
+
   // Create new event
   createEvent: async (eventData: CreateEventData): Promise<{ message: string }> => {
     const formData = new FormData();

@@ -231,7 +231,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg shadow-lg z-50 p-4 min-w-[320px]">
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg shadow-lg z-[9999] p-4 min-w-[320px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -321,7 +321,7 @@ export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40" 
+          className="fixed inset-0 z-[9998]" 
           onClick={() => setIsOpen(false)}
         />
       )}
