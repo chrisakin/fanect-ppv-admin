@@ -4,11 +4,13 @@ import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail } f
 import { userService, ApiUser } from '../../services/userService';
 import { useUserStore } from '../../store/userStore';
 import { useTransactionStore } from '../../store/transactionStore';
+import { useActivityStore } from '../../store/activityStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
+import { ActivityTable } from '../../components/activities/ActivityTable';
 
 const SingleUserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +39,23 @@ const SingleUserPage: React.FC = () => {
     clearError: clearTransactionError,
     resetStore: resetTransactionStore
   } = useTransactionStore();
+  
+  // Activity store
+  const {
+    activities,
+    loading: activitiesLoading,
+    error: activitiesError,
+    currentPage: activitiesCurrentPage,
+    totalPages: activitiesTotalPages,
+    totalDocs: activitiesTotalDocs,
+    limit: activitiesLimit,
+    filters: activityFilters,
+    setFilters: setActivityFilters,
+    setCurrentPage: setActivityCurrentPage,
+    fetchUserActivities,
+    clearError: clearActivityError,
+    resetStore: resetActivityStore
+  } = useActivityStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -86,6 +105,8 @@ const SingleUserPage: React.FC = () => {
     
     // Reset transaction store when component mounts or user changes
     resetTransactionStore();
+    // Reset activity store when component mounts or user changes
+    resetActivityStore();
   }, [id]);
 
   // Fetch transactions when transactions tab is active
@@ -109,6 +130,28 @@ const SingleUserPage: React.FC = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [transactionFilters.searchTerm]);
+
+  // Fetch activities when activities tab is active
+  useEffect(() => {
+    if (activeTab === 'activities' && id) {
+      fetchUserActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
+    }
+  }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate]);
+
+  // Handle activity search with debounce
+  useEffect(() => {
+    if (activeTab === 'activities' && id) {
+      const timeoutId = setTimeout(() => {
+        if (activitiesCurrentPage === 1) {
+          fetchUserActivities(id, 1, activityFilters.searchTerm);
+        } else {
+          setActivityCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [activityFilters.searchTerm]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'lock' | 'unlock', userId: string, userName: string) => {
@@ -209,6 +252,49 @@ const SingleUserPage: React.FC = () => {
     });
     if (transactionsCurrentPage !== 1) {
       setTransactionCurrentPage(1);
+    }
+  };
+
+  // Activity pagination handlers
+  const handleActivityPreviousPage = () => {
+    if (activitiesCurrentPage > 1) {
+      setActivityCurrentPage(activitiesCurrentPage - 1);
+    }
+  };
+
+  const handleActivityNextPage = () => {
+    if (activitiesCurrentPage < activitiesTotalPages) {
+      setActivityCurrentPage(activitiesCurrentPage + 1);
+    }
+  };
+
+  // Handle activity filter changes
+  const handleActivityFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setActivityFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setActivityFilters({ [key]: value });
+    }
+    if (activitiesCurrentPage !== 1) {
+      setActivityCurrentPage(1);
+    }
+  };
+
+  // Clear activity filters
+  const clearActivityFilters = () => {
+    setActivityFilters({
+      component: 'All',
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
+    });
+    if (activitiesCurrentPage !== 1) {
+      setActivityCurrentPage(1);
     }
   };
 
@@ -520,10 +606,31 @@ const SingleUserPage: React.FC = () => {
           )}
 
           {activeTab === 'activities' && (
-            <div className="text-center py-12">
-              <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">User Activities</h3>
-              <p className="text-gray-500 dark:text-dark-400">User activity logs will be displayed here.</p>
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!activitiesError}
+                message={activitiesError || ''}
+                onClose={clearActivityError}
+              />
+
+              {/* Activities Table with Filters */}
+              <ActivityTable
+                activities={activities}
+                loading={activitiesLoading}
+                currentPage={activitiesCurrentPage}
+                totalPages={activitiesTotalPages}
+                totalDocs={activitiesTotalDocs}
+                limit={activitiesLimit}
+                onPreviousPage={handleActivityPreviousPage}
+                onNextPage={handleActivityNextPage}
+                emptyMessage="No Activities Found"
+                emptyDescription="This user hasn't performed any activities yet."
+                filters={activityFilters}
+                onFilterChange={handleActivityFilterChange}
+                onClearFilters={clearActivityFilters}
+                showFilters={true}
+              />
             </div>
           )}
         </div>
