@@ -33,7 +33,7 @@ const SingleAdminPage: React.FC = () => {
     filters: activityFilters,
     setFilters: setActivityFilters,
     setCurrentPage: setActivityCurrentPage,
-    fetchUserActivities,
+    fetchAdminActivities,
     clearError: clearActivityError,
     resetStore: resetActivityStore
   } = useActivityStore();
@@ -91,7 +91,7 @@ const SingleAdminPage: React.FC = () => {
   // Fetch activities when activities tab is active
   useEffect(() => {
     if (activeTab === 'activities' && id) {
-      fetchUserActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
+      fetchAdminActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
     }
   }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate]);
 
@@ -100,7 +100,7 @@ const SingleAdminPage: React.FC = () => {
     if (activeTab === 'activities' && id) {
       const timeoutId = setTimeout(() => {
         if (activitiesCurrentPage === 1) {
-          fetchUserActivities(id, 1, activityFilters.searchTerm);
+          fetchAdminActivities(id, 1, activityFilters.searchTerm);
         } else {
           setActivityCurrentPage(1);
         }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Lock, Unlock, Filter } from 'lucide-react';
+import { Eye, Lock, Unlock, Filter, Plus } from 'lucide-react';
 import { ApiAdmin, AdminStatus } from '../../services/adminService';
 import { useAdminStore } from '../../store/adminStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
@@ -11,10 +11,14 @@ import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { ActionDropdown } from '../../components/ui/action-dropdown';
 import { FilterBar } from '../../components/ui/filter-bar';
 import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
+import { CreateAdminModal } from '../../components/ui/create-admin-modal';
 
 const AdminsPage: React.FC = () => {
   const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Create admin modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
   // Store state
   const {
@@ -272,6 +276,13 @@ const AdminsPage: React.FC = () => {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">Admin Management</h1>
+        <button 
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-primary-600 text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Create Admin</span>
+        </button>
       </div>
 
       {/* Error Message */}
@@ -418,6 +429,17 @@ const AdminsPage: React.FC = () => {
         isOpen={successAlert.isOpen}
         message={successAlert.message}
         onClose={() => setSuccessAlert({ isOpen: false, message: '' })}
+      />
+
+      {/* Create Admin Modal */}
+      <CreateAdminModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(message) => {
+          setSuccessAlert({ isOpen: true, message });
+          // Refresh admins list
+          fetchAdmins(currentPage, filters.searchTerm);
+        }}
       />
     </div>
   );

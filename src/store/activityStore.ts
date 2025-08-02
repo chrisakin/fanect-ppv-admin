@@ -26,6 +26,7 @@ interface ActivityState {
   
   // API Actions
   fetchUserActivities: (userId: string, page?: number, searchTerm?: string) => Promise<void>;
+  fetchAdminActivities: (adminId: string, page?: number, searchTerm?: string) => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
 }
@@ -90,6 +91,35 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     } catch (err: any) {
       set({ error: err.response?.data?.message || 'Failed to fetch user activities' });
       console.error('Error fetching user activities:', err);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchAdminActivities: async (adminId: string, page = 1, searchTerm = '') => {
+    const { filters, limit } = get();
+    
+    try {
+      set({ loading: true, error: null });
+      
+      const apiFilters = {
+        component: filters.component,
+        searchTerm: searchTerm.trim(),
+        startDate: filters.startDate,
+        endDate: filters.endDate
+      };
+      
+      const response = await activityService.getAdminActivities(adminId, page, limit, apiFilters);
+      
+      set({
+        activities: response.docs,
+        currentPage: response.currentPage,
+        totalPages: response.totalPages,
+        totalDocs: response.totalDocs,
+      });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || 'Failed to fetch admin activities' });
+      console.error('Error fetching admin activities:', err);
     } finally {
       set({ loading: false });
     }

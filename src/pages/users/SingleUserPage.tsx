@@ -549,7 +549,7 @@ const SingleUserPage: React.FC = () => {
             >
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4" />
-                <span>User Events</span>
+                <span>Events Joined</span>
               </div>
             </button>
             <button

@@ -1,4 +1,5 @@
 import api from '../utils/api';
+import { CreateAdminData } from '../types/admin';
 
 export enum AdminStatus {
   ACTIVE = 'Active',
@@ -87,6 +88,12 @@ export const adminService = {
   // Unlock admin
   unlockAdmin: async (adminId: string): Promise<{ message: string }> => {
     const response = await api.put(`/admin/auth/unlock-user/${adminId}`);
+    return response.data;
+  },
+
+  // Create new admin
+  createAdmin: async (data: CreateAdminData): Promise<{ message: string }> => {
+    const response = await api.post('/admin/auth/create-admin', data);
     return response.data;
   },
 };
