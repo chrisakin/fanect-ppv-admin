@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Lock, Unlock, Filter, Plus } from 'lucide-react';
-import { ApiAdmin, AdminStatus } from '../../services/adminService';
+import { AdminStatus } from '../../services/adminService';
 import { useAdminStore } from '../../store/adminStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
-import { ErrorAlert } from '../../components/ui/error-alert';
-import { Pagination } from '../../components/ui/pagination';
-import { LoadingSpinner } from '../../components/ui/loading-spinner';
-import { ActionDropdown } from '../../components/ui/action-dropdown';
-import { FilterBar } from '../../components/ui/filter-bar';
-import { CustomDateRangePicker } from '../../components/ui/custom-date-range-picker';
 import { CreateAdminModal } from '../../components/ui/create-admin-modal';
+import { UserTable } from '../../components/ui/user-table';
 
 const AdminsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
-  // Create admin modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  // Store state
   const {
     admins,
     loading,
@@ -39,7 +30,6 @@ const AdminsPage: React.FC = () => {
     clearError
   } = useAdminStore();
 
-  // Modal state
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     type: 'lock' | 'unlock' | null;
@@ -52,7 +42,6 @@ const AdminsPage: React.FC = () => {
     adminName: null
   });
 
-  // Success alert state
   const [successAlert, setSuccessAlert] = useState<{
     isOpen: boolean;
     message: string;
@@ -61,12 +50,10 @@ const AdminsPage: React.FC = () => {
     message: ''
   });
 
-  // Load admins on component mount, page change, or filter change
   useEffect(() => {
     fetchAdmins(currentPage, filters.searchTerm);
   }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate]);
 
-  // Handle search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
@@ -79,7 +66,6 @@ const AdminsPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [filters.searchTerm]);
 
-  // Open confirmation modal
   const openConfirmationModal = (type: 'lock' | 'unlock', adminId: string, adminName: string) => {
     setModalState({
       isOpen: true,
@@ -87,10 +73,8 @@ const AdminsPage: React.FC = () => {
       adminId,
       adminName
     });
-    setOpenDropdown(null);
   };
 
-  // Close confirmation modal
   const closeConfirmationModal = () => {
     setModalState({
       isOpen: false,
@@ -100,7 +84,6 @@ const AdminsPage: React.FC = () => {
     });
   };
 
-  // Handle admin lock/unlock with confirmation
   const handleAdminAction = async () => {
     if (!modalState.adminId || !modalState.type) return;
 
@@ -130,7 +113,6 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Pagination handlers
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -143,10 +125,8 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
     if (key === 'dateRange') {
-      // Handle date range separately
       const dateRange = JSON.parse(value);
       setFilters({ 
         startDate: dateRange.startDate || '',
@@ -160,7 +140,6 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({
       status: 'All',
@@ -174,7 +153,6 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Get modal configuration based on action type
   const getModalConfig = () => {
     const { type, adminName } = modalState;
     
@@ -195,225 +173,41 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Action dropdown component
-  const getAdminActionItems = (admin: ApiAdmin) => [
-    {
-      icon: Eye,
-      label: 'View Details',
-      onClick: () => {
-        navigate(`/admins/${admin._id}`);
-        setOpenDropdown(null);
-      }
-    },
-    {
-      icon: admin.locked ? Unlock : Lock,
-      label: admin.locked ? 'Unlock Account' : 'Lock Account',
-      onClick: () => {
-        openConfirmationModal(
-          admin.locked ? 'unlock' : 'lock', 
-          admin._id, 
-          `${admin.firstName} ${admin.lastName}`
-        );
-      },
-      disabled: actionLoading === admin._id,
-      className: admin.locked ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
-    }
-  ];
-
-  // Filter configuration
-  const filterConfigs = [
-     {
-      key: 'dateRange',
-      label: 'Join Date Range',
-      value: JSON.stringify({
-        startDate: filters.startDate || null,
-        endDate: filters.endDate || null
-      }),
-      type: 'custom' as const,
-      component: (
-        <CustomDateRangePicker
-          value={{
-            startDate: filters.startDate || null,
-            endDate: filters.endDate || null
-          }}
-          onChange={(dateRange) => 
-            handleFilterChange('dateRange', JSON.stringify(dateRange))
-          }
-          placeholder="Select join date range"
-          className="h-10"
-          showSearchButton={true}
-          onSearch={(dateRange) => 
-            handleFilterChange('dateRange', JSON.stringify(dateRange))
-          }
-        />
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      value: filters.status,
-      icon: Filter,
-      options: [
-        { value: 'All', label: 'All Status' },
-        { value: AdminStatus.ACTIVE, label: 'Active' },
-        { value: AdminStatus.INACTIVE, label: 'Inactive' }
-      ]
-    },
-    {
-      key: 'locked',
-      label: 'Locked',
-      value: filters.locked,
-      icon: Filter,
-      options: [
-        { value: 'All', label: 'All Locked' },
-        { value: 'Locked', label: 'Locked' },
-        { value: 'Not Locked', label: 'Not Locked' }
-      ]
-    },
+  const statusOptions = [
+    { value: 'All', label: 'All Status' },
+    { value: AdminStatus.ACTIVE, label: 'Active' },
+    { value: AdminStatus.INACTIVE, label: 'Inactive' }
   ];
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">Admin Management</h1>
-        <button 
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-primary-600 text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Admin</span>
-        </button>
-      </div>
-
-      {/* Error Message */}
-      <ErrorAlert
-        isOpen={!!error}
-        message={error || ''}
-        onClose={clearError}
-      />
-
-      {/* Filters */}
-      <FilterBar
-        filters={filterConfigs as any}
+    <>
+      <UserTable
+        users={admins}
+        loading={loading}
+        error={error}
+        actionLoading={actionLoading}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalDocs={totalDocs}
+        limit={limit}
+        filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
-        searchValue={filters.searchTerm}
-        onSearchChange={(value) => handleFilterChange('searchTerm', value)}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        onViewUser={(adminId) => navigate(`/admins/${adminId}`)}
+        onLockUser={openConfirmationModal.bind(null, 'lock')}
+        onUnlockUser={openConfirmationModal.bind(null, 'unlock')}
+        clearError={clearError}
+        userType="admin"
+        statusOptions={statusOptions}
         searchPlaceholder="Search admins by name or email..."
+        title="Admin Management"
+        showRole={true}
+        showCreateButton={true}
+        onCreateUser={() => setIsCreateModalOpen(true)}
+        createButtonText="Create Admin"
       />
-
-      {/* Admins Table */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
-        {loading ? (
-          <LoadingSpinner />
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full table-fixed min-w-[800px]">
-                <colgroup>
-                  <col className="w-[200px]" />
-                  <col className="w-[180px]" />
-                  <col className="w-[100px]" />
-                  <col className="w-[120px]" />
-                  <col className="w-[120px]" />
-                  <col className="w-[100px]" />
-                </colgroup>
-                <thead className="bg-gray-50 dark:bg-dark-700">
-                  <tr>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Admin
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Last Login
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                     Locked Status
-                    </th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
-                  {admins.map((admin) => (
-                    <tr key={admin._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-white text-sm font-bold">
-                              {admin.firstName[0]}{admin.lastName[0]}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                              {admin.firstName} {admin.lastName}
-                            </div>
-                            {admin.role && (
-                              <div className="text-sm text-gray-500 dark:text-dark-400">
-                                {admin.role}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
-                        {admin.email}
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            admin.status === AdminStatus.ACTIVE ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                          }`}>
-                            {admin.status}
-                          </span>
-                          {admin.locked && (
-                            <Lock className="w-4 h-4 text-red-500 dark:text-red-400" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
-                        {new Date(admin.lastLogin).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          admin.locked  ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400':'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                        }`}>
-                          {admin.locked ? 'Locked' : 'Not Locked'}
-                        </span>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <ActionDropdown
-                          items={getAdminActionItems(admin)}
-                          isOpen={openDropdown === admin._id}
-                          onToggle={() => setOpenDropdown(openDropdown === admin._id ? null : admin._id)}
-                          isLoading={actionLoading === admin._id}
-                          onClickOutside={() => setOpenDropdown(null)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalDocs={totalDocs}
-              limit={limit}
-              onPreviousPage={handlePreviousPage}
-              onNextPage={handleNextPage}
-            />
-          </>
-        )}
-      </div>
 
       {/* Confirmation Modal */}
       <ConfirmationModal
@@ -441,7 +235,7 @@ const AdminsPage: React.FC = () => {
           fetchAdmins(currentPage, filters.searchTerm);
         }}
       />
-    </div>
+    </>
   );
 };
 

@@ -89,7 +89,7 @@ export const useOrganiserEventStore = create<OrganiserEventState>((set, get) => 
       };
       
       // Using the same endpoint as user events but for organiser
-      const response = await eventService.getUserEvents(organiserId, page, limit, apiFilters);
+      const response = await eventService.getOrganiserEvents(organiserId, page, limit, apiFilters);
       
       set({
         events: response.docs,
