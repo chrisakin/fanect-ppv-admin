@@ -744,6 +744,7 @@ const SingleUserPage: React.FC = () => {
                 onFilterChange={handleActivityFilterChange}
                 onClearFilters={clearActivityFilters}
                 showFilters={true}
+                userType="user"
               />
             </div>
           )}

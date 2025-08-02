@@ -11,6 +11,8 @@ import SingleEventPage from './pages/events/SingleEventPage';
 import CreateEventPage from './pages/events/CreateEventPage';
 import UsersPage from './pages/users/UsersPage';
 import SingleUserPage from './pages/users/SingleUserPage';
+import OrganisersPage from './pages/organisers/OrganisersPage';
+import SingleOrganiserPage from './pages/organisers/SingleOrganiserPage';
 import AdminsPage from './pages/admins/AdminsPage';
 import SingleAdminPage from './pages/admins/SingleAdminPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
@@ -39,9 +41,10 @@ function App() {
               <Route path="/events/:id" element={<SingleEventPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/users/:id" element={<SingleUserPage />} />
+              <Route path="/organisers/:id" element={<SingleOrganiserPage />} />
               <Route path="/admins" element={<AdminsPage />} />
               <Route path="/admins/:id" element={<SingleAdminPage />} />
-              <Route path="/organizers" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Organizers - Coming Soon</h1></div>} />
+              <Route path="/organizers" element={<OrganisersPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/analytics" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Analytics - Coming Soon</h1></div>} />
               <Route path="/settings" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Settings - Coming Soon</h1></div>} />

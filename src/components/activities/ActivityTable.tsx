@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Filter, Calendar } from 'lucide-react';
+import { Activity, Filter } from 'lucide-react';
 import { UserActivity, ActivityFilters } from '../../types/activity';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
@@ -22,6 +22,7 @@ interface ActivityTableProps {
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
   showFilters?: boolean;
+  userType: string;
 }
 
 export const ActivityTable: React.FC<ActivityTableProps> = ({
@@ -38,7 +39,8 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
   filters,
   onFilterChange,
   onClearFilters,
-  showFilters = false
+  showFilters = false,
+  userType
 }) => {
   const getComponentColor = (component: string) => {
     switch (component) {
@@ -46,12 +48,19 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
       case 'event':
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'feedback':
+      case 'users':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+      case 'organisers':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
+      case 'admin':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400';
+      case 'transactions':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+         case 'feedback':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
       case 'streampass':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
       case 'withdrawal':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
     }
@@ -111,13 +120,22 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
       label: 'Component',
       value: filters.component,
       icon: Filter,
-      options: [
+      options: userType == 'admin' ? [
+        { value: 'All', label: 'All Components' },
+        { value: 'auth', label: 'Authentication' },
+        { value: 'event', label: 'Event' },
+        { value: 'users', label: 'Users' },
+        { value: 'organisers', label: 'Organisers' },
+        { value: 'admin', label: 'Admin' },
+        { value: 'transactions', label: 'Transactions' }
+      ] : [
         { value: 'All', label: 'All Components' },
         { value: 'auth', label: 'Authentication' },
         { value: 'event', label: 'Event' },
         { value: 'feedback', label: 'Feedback' },
         { value: 'streampass', label: 'Stream Pass' },
         { value: 'withdrawal', label: 'Withdrawal' }
+
       ]
     },
   ] : [];

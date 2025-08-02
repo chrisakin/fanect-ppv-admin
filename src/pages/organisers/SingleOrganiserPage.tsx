@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Unlock, User, Activity, Mail, Calendar } from 'lucide-react';
-import { adminService, ApiAdmin } from '../../services/adminService';
-import { useAdminStore } from '../../store/adminStore';
+import { ArrowLeft, Lock, Unlock, User, Activity, CreditCard, Calendar, Mail, BarChart3 } from 'lucide-react';
+import { organiserService, ApiOrganiser } from '../../services/organiserService';
+import { useOrganiserStore } from '../../store/organiserStore';
 import { useActivityStore } from '../../store/activityStore';
+import { useOrganiserEventStore } from '../../store/organiserEventStore';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { ActivityTable } from '../../components/activities/ActivityTable';
+import { EventsTable } from '../../components/events/EventsTable';
 
-const SingleAdminPage: React.FC = () => {
+const SingleOrganiserPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [admin, setAdmin] = useState<ApiAdmin | null>(null);
+  const [organiser, setOrganiser] = useState<ApiOrganiser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activities'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'revenue' | 'activities'>('overview');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Store actions
-  const { actionLoading, lockAdmin, unlockAdmin } = useAdminStore();
+  const { actionLoading, lockOrganiser, unlockOrganiser } = useOrganiserStore();
   
   // Activity store
   const {
@@ -33,22 +36,39 @@ const SingleAdminPage: React.FC = () => {
     filters: activityFilters,
     setFilters: setActivityFilters,
     setCurrentPage: setActivityCurrentPage,
-    fetchAdminActivities,
+    fetchUserActivities,
     clearError: clearActivityError,
     resetStore: resetActivityStore
   } = useActivityStore();
+  
+  // Organiser Event store
+  const {
+    events: organiserEvents,
+    loading: organiserEventsLoading,
+    error: organiserEventsError,
+    currentPage: organiserEventsCurrentPage,
+    totalPages: organiserEventsTotalPages,
+    totalDocs: organiserEventsTotalDocs,
+    limit: organiserEventsLimit,
+    filters: organiserEventFilters,
+    setFilters: setOrganiserEventFilters,
+    setCurrentPage: setOrganiserEventCurrentPage,
+    fetchOrganiserEvents,
+    clearError: clearOrganiserEventError,
+    resetStore: resetOrganiserEventStore
+  } = useOrganiserEventStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     type: 'lock' | 'unlock' | null;
-    adminId: string | null;
-    adminName: string | null;
+    organiserId: string | null;
+    organiserName: string | null;
   }>({
     isOpen: false,
     type: null,
-    adminId: null,
-    adminName: null
+    organiserId: null,
+    organiserName: null
   });
   
   // Success alert state
@@ -60,11 +80,11 @@ const SingleAdminPage: React.FC = () => {
     message: ''
   });
 
-  // Fetch single admin
+  // Fetch single organiser
   useEffect(() => {
-    const fetchAdmin = async () => {
+    const fetchOrganiser = async () => {
       if (!id) {
-        setError('Admin ID is required');
+        setError('Organiser ID is required');
         setLoading(false);
         return;
       }
@@ -72,26 +92,27 @@ const SingleAdminPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await adminService.getSingleAdmin(id);
-        setAdmin(response.admin);
+        const response = await organiserService.getSingleOrganiser(id);
+        setOrganiser(response.user);
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to fetch admin details');
-        console.error('Error fetching admin details:', err);
+        setError(err.response?.data?.message || 'Failed to fetch organiser details');
+        console.error('Error fetching organiser details:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAdmin();
+    fetchOrganiser();
     
-    // Reset activity store when component mounts or admin changes
+    // Reset stores when component mounts or organiser changes
     resetActivityStore();
+    resetOrganiserEventStore();
   }, [id]);
 
   // Fetch activities when activities tab is active
   useEffect(() => {
     if (activeTab === 'activities' && id) {
-      fetchAdminActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
+      fetchUserActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
     }
   }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate]);
 
@@ -100,7 +121,7 @@ const SingleAdminPage: React.FC = () => {
     if (activeTab === 'activities' && id) {
       const timeoutId = setTimeout(() => {
         if (activitiesCurrentPage === 1) {
-          fetchAdminActivities(id, 1, activityFilters.searchTerm);
+          fetchUserActivities(id, 1, activityFilters.searchTerm);
         } else {
           setActivityCurrentPage(1);
         }
@@ -110,13 +131,35 @@ const SingleAdminPage: React.FC = () => {
     }
   }, [activityFilters.searchTerm]);
 
+  // Fetch organiser events when events tab is active
+  useEffect(() => {
+    if (activeTab === 'events' && id) {
+      fetchOrganiserEvents(id, organiserEventsCurrentPage, organiserEventFilters.searchTerm);
+    }
+  }, [activeTab, id, organiserEventsCurrentPage, organiserEventFilters.status, organiserEventFilters.adminStatus, organiserEventFilters.startDate, organiserEventFilters.endDate]);
+
+  // Handle organiser event search with debounce
+  useEffect(() => {
+    if (activeTab === 'events' && id) {
+      const timeoutId = setTimeout(() => {
+        if (organiserEventsCurrentPage === 1) {
+          fetchOrganiserEvents(id, 1, organiserEventFilters.searchTerm);
+        } else {
+          setOrganiserEventCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [organiserEventFilters.searchTerm]);
+
   // Open confirmation modal
-  const openConfirmationModal = (type: 'lock' | 'unlock', adminId: string, adminName: string) => {
+  const openConfirmationModal = (type: 'lock' | 'unlock', organiserId: string, organiserName: string) => {
     setModalState({
       isOpen: true,
       type,
-      adminId,
-      adminName
+      organiserId,
+      organiserName
     });
   };
 
@@ -125,35 +168,35 @@ const SingleAdminPage: React.FC = () => {
     setModalState({
       isOpen: false,
       type: null,
-      adminId: null,
-      adminName: null
+      organiserId: null,
+      organiserName: null
     });
   };
 
-  // Handle admin lock/unlock with confirmation
-  const handleAdminAction = async () => {
-    if (!modalState.adminId || !modalState.type) return;
+  // Handle organiser lock/unlock with confirmation
+  const handleOrganiserAction = async () => {
+    if (!modalState.organiserId || !modalState.type) return;
 
     try {
       let result;
       
       if (modalState.type === 'lock') {
-        result = await lockAdmin(modalState.adminId);
+        result = await lockOrganiser(modalState.organiserId);
       } else {
-        result = await unlockAdmin(modalState.adminId);
+        result = await unlockOrganiser(modalState.organiserId);
       }
       
       if (result.success) {
-        // Refresh admin data
+        // Refresh organiser data
         if (id) {
-          const updatedAdmin = await adminService.getSingleAdmin(id);
-          setAdmin(updatedAdmin.admin);
+          const updatedOrganiser = await organiserService.getSingleOrganiser(id);
+          setOrganiser(updatedOrganiser.user);
         }
         
         // Show success alert
         setSuccessAlert({
           isOpen: true,
-          message: result.message || `Admin ${modalState.type}ed successfully!`
+          message: result.message || `Organiser ${modalState.type}ed successfully!`
         });
       }
       
@@ -161,8 +204,8 @@ const SingleAdminPage: React.FC = () => {
       closeConfirmationModal();
       
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${modalState.type} admin`);
-      console.error(`Error ${modalState.type}ing admin:`, err);
+      setError(err.response?.data?.message || `Failed to ${modalState.type} organiser`);
+      console.error(`Error ${modalState.type}ing organiser:`, err);
       closeConfirmationModal();
     }
   };
@@ -210,21 +253,65 @@ const SingleAdminPage: React.FC = () => {
     }
   };
 
+  // Organiser Event pagination handlers
+  const handleOrganiserEventPreviousPage = () => {
+    if (organiserEventsCurrentPage > 1) {
+      setOrganiserEventCurrentPage(organiserEventsCurrentPage - 1);
+    }
+  };
+
+  const handleOrganiserEventNextPage = () => {
+    if (organiserEventsCurrentPage < organiserEventsTotalPages) {
+      setOrganiserEventCurrentPage(organiserEventsCurrentPage + 1);
+    }
+  };
+
+  // Handle organiser event filter changes
+  const handleOrganiserEventFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setOrganiserEventFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setOrganiserEventFilters({ [key]: value });
+    }
+    if (organiserEventsCurrentPage !== 1) {
+      setOrganiserEventCurrentPage(1);
+    }
+  };
+
+  // Clear organiser event filters
+  const clearOrganiserEventFilters = () => {
+    setOrganiserEventFilters({
+      status: 'All',
+      adminStatus: 'All',
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
+    });
+    if (organiserEventsCurrentPage !== 1) {
+      setOrganiserEventCurrentPage(1);
+    }
+  };
+
   // Get modal configuration based on action type
   const getModalConfig = () => {
-    const { type, adminName } = modalState;
+    const { type, organiserName } = modalState;
     
     if (type === 'lock') {
       return {
-        title: 'Lock Admin Account',
-        message: `Are you sure you want to lock ${adminName}'s account? They will not be able to access their account until it's unlocked.`,
+        title: 'Lock Organiser Account',
+        message: `Are you sure you want to lock ${organiserName}'s account? They will not be able to access their account until it's unlocked.`,
         confirmText: 'Lock Account',
         confirmColor: 'bg-red-600 hover:bg-red-700'
       };
     } else {
       return {
-        title: 'Unlock Admin Account',
-        message: `Are you sure you want to unlock ${adminName}'s account? They will be able to access their account again.`,
+        title: 'Unlock Organiser Account',
+        message: `Are you sure you want to unlock ${organiserName}'s account? They will be able to access their account again.`,
         confirmText: 'Unlock Account',
         confirmColor: 'bg-green-600 hover:bg-green-700'
       };
@@ -235,21 +322,21 @@ const SingleAdminPage: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  if (error || !admin) {
+  if (error || !organiser) {
     return (
       <div className="space-y-4 lg:space-y-6">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate('/admins')}
+            onClick={() => navigate('/organisers')}
             className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium transition-colors duration-200"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Admins</span>
+            <span className="hidden sm:inline">Back to Organisers</span>
           </button>
         </div>
         <ErrorAlert
           isOpen={true}
-          message={error || 'Admin not found'}
+          message={error || 'Organiser not found'}
           onClose={() => {}}
         />
       </div>
@@ -260,11 +347,11 @@ const SingleAdminPage: React.FC = () => {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex items-center space-x-4">
         <button
-          onClick={() => navigate('/admins')}
+          onClick={() => navigate('/organisers')}
           className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium transition-colors duration-200"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Back to Admins</span>
+          <span className="hidden sm:inline">Back to Organisers</span>
         </button>
       </div>
 
@@ -280,31 +367,29 @@ const SingleAdminPage: React.FC = () => {
         <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-dark-700">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-xl font-bold">
-                  {admin.firstName[0]}{admin.lastName[0]}
+                  {organiser.firstName[0]}{organiser.lastName[0]}
                 </span>
               </div>
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100">
-                  {admin.firstName} {admin.lastName}
+                  {organiser.firstName} {organiser.lastName}
                 </h1>
-                <p className="text-gray-600 dark:text-dark-300">{admin.email}</p>
-                {admin.role && (
-                  <p className="text-gray-600 dark:text-dark-300">{admin.role}</p>
-                )}
+                <p className="text-gray-600 dark:text-dark-300">@{organiser.username}</p>
+                <p className="text-gray-600 dark:text-dark-300">{organiser.email}</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    admin.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                    organiser.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                   }`}>
-                    {admin.status}
+                    {organiser.status}
                   </span>
-                  {admin.locked && (
+                  {organiser.locked && (
                     <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 rounded-full text-xs font-medium">
                       Locked
                     </span>
                   )}
-                  {admin.isVerified && (
+                  {organiser.isVerified && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full text-xs font-medium">
                       Verified
                     </span>
@@ -315,23 +400,23 @@ const SingleAdminPage: React.FC = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => openConfirmationModal(
-                  admin.locked ? 'unlock' : 'lock',
-                  admin._id,
-                  `${admin.firstName} ${admin.lastName}`
+                  organiser.locked ? 'unlock' : 'lock',
+                  organiser._id,
+                  `${organiser.firstName} ${organiser.lastName}`
                 )}
-                disabled={actionLoading === admin._id}
+                disabled={actionLoading === organiser._id}
                 className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  admin.locked
+                  organiser.locked
                     ? 'bg-green-600 text-white hover:bg-green-700'
                     : 'bg-red-600 text-white hover:bg-red-700'
                 }`}
               >
-                {actionLoading === admin._id ? (
+                {actionLoading === organiser._id ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  admin.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />
+                  organiser.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />
                 )}
-                <span>{actionLoading === admin._id ? 'Processing...' : (admin.locked ? 'Unlock' : 'Lock')} Account</span>
+                <span>{actionLoading === organiser._id ? 'Processing...' : (organiser.locked ? 'Unlock' : 'Lock')} Account</span>
               </button>
             </div>
           </div>
@@ -354,6 +439,32 @@ const SingleAdminPage: React.FC = () => {
               </div>
             </button>
             <button
+              onClick={() => setActiveTab('events')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'events'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4" />
+                <span>Events Created</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('revenue')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'revenue'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Revenue Analytics</span>
+              </div>
+            </button>
+            <button
               onClick={() => setActiveTab('activities')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                 activeTab === 'activities'
@@ -363,7 +474,7 @@ const SingleAdminPage: React.FC = () => {
             >
               <div className="flex items-center space-x-2">
                 <Activity className="w-4 h-4" />
-                <span>Admin Activities</span>
+                <span>Organiser Activities</span>
               </div>
             </button>
           </nav>
@@ -381,32 +492,33 @@ const SingleAdminPage: React.FC = () => {
                       <Mail className="w-5 h-5 text-gray-500 dark:text-dark-400" />
                       <div>
                         <p className="text-sm text-gray-600 dark:text-dark-300">Email</p>
-                        <p className="text-gray-900 dark:text-dark-100">{admin.email}</p>
+                        <p className="text-gray-900 dark:text-dark-100">{organiser.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Calendar className="w-5 h-5 text-gray-500 dark:text-dark-400" />
                       <div>
                         <p className="text-sm text-gray-600 dark:text-dark-300">Member Since</p>
-                        <p className="text-gray-900 dark:text-dark-100">{new Date(admin.createdAt).toLocaleDateString()}</p>
+                        <p className="text-gray-900 dark:text-dark-100">{new Date(organiser.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Activity className="w-5 h-5 text-gray-500 dark:text-dark-400" />
                       <div>
                         <p className="text-sm text-gray-600 dark:text-dark-300">Last Login</p>
-                        <p className="text-gray-900 dark:text-dark-100">{new Date(admin.lastLogin).toLocaleString()}</p>
+                        <p className="text-gray-900 dark:text-dark-100">{new Date(organiser.lastLogin).toLocaleString()}</p>
                       </div>
                     </div>
-                    {admin.role && (
-                      <div className="flex items-center space-x-3">
-                        <User className="w-5 h-5 text-gray-500 dark:text-dark-400" />
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-dark-300">Role</p>
-                          <p className="text-gray-900 dark:text-dark-100">{admin.role}</p>
-                        </div>
-                      </div>
-                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4">Activity Summary</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-dark-300">Events Created</p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{organiser.eventCreated}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -421,9 +533,9 @@ const SingleAdminPage: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-dark-400">Current account status</p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        admin.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                        organiser.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                       }`}>
-                        {admin.status}
+                        {organiser.status}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
@@ -432,9 +544,9 @@ const SingleAdminPage: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-dark-400">Email verification status</p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        admin.isVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        organiser.isVerified ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                       }`}>
-                        {admin.isVerified ? 'Verified' : 'Not Verified'}
+                        {organiser.isVerified ? 'Verified' : 'Not Verified'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
@@ -443,14 +555,57 @@ const SingleAdminPage: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-dark-400">Account lock status</p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        admin.locked ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                        organiser.locked ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                       }`}>
-                        {admin.locked ? 'Locked' : 'Unlocked'}
+                        {organiser.locked ? 'Locked' : 'Unlocked'}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'events' && (
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!organiserEventsError}
+                message={organiserEventsError || ''}
+                onClose={clearOrganiserEventError}
+              />
+
+              {/* Organiser Events Table with Filters */}
+              <EventsTable
+                events={organiserEvents}
+                loading={organiserEventsLoading}
+                currentPage={organiserEventsCurrentPage}
+                totalPages={organiserEventsTotalPages}
+                totalDocs={organiserEventsTotalDocs}
+                limit={organiserEventsLimit}
+                onPreviousPage={handleOrganiserEventPreviousPage}
+                onNextPage={handleOrganiserEventNextPage}
+                emptyMessage="No Events Found"
+                emptyDescription="This organiser hasn't created any events yet."
+                filters={organiserEventFilters}
+                onFilterChange={handleOrganiserEventFilterChange}
+                onClearFilters={clearOrganiserEventFilters}
+                openDropdown={openDropdown}
+                onToggleDropdown={setOpenDropdown}
+                showFilters={true}
+                showActions={true}
+                showFullActions={false}
+                onViewEvent={(eventId) => navigate(`/events/${eventId}`)}
+                onEditEvent={(eventId) => navigate(`/events/edit/${eventId}`)}
+              />
+            </div>
+          )}
+
+          {activeTab === 'revenue' && (
+            <div className="text-center py-12">
+              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">Revenue Analytics</h3>
+              <p className="text-gray-500 dark:text-dark-400">Revenue analytics feature coming soon.</p>
             </div>
           )}
 
@@ -474,12 +629,12 @@ const SingleAdminPage: React.FC = () => {
                 onPreviousPage={handleActivityPreviousPage}
                 onNextPage={handleActivityNextPage}
                 emptyMessage="No Activities Found"
-                emptyDescription="This admin hasn't performed any activities yet."
+                emptyDescription="This organiser hasn't performed any activities yet."
                 filters={activityFilters}
                 onFilterChange={handleActivityFilterChange}
                 onClearFilters={clearActivityFilters}
                 showFilters={true}
-                userType="admin"
+                userType="organiser"
               />
             </div>
           )}
@@ -490,8 +645,8 @@ const SingleAdminPage: React.FC = () => {
       <ConfirmationModal
         isOpen={modalState.isOpen}
         onClose={closeConfirmationModal}
-        onConfirm={handleAdminAction}
-        isLoading={actionLoading === modalState.adminId}
+        onConfirm={handleOrganiserAction}
+        isLoading={actionLoading === modalState.organiserId}
         {...getModalConfig()}
       />
 
@@ -505,4 +660,4 @@ const SingleAdminPage: React.FC = () => {
   );
 };
 
-export default SingleAdminPage;
+export default SingleOrganiserPage;
