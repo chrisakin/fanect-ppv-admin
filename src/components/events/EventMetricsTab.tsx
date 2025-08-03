@@ -144,7 +144,7 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
       ) : (
         <>
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
