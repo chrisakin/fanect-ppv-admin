@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { locationService } from '../../services/locationService';
 import { LocationModal } from './LocationModal';
+import { ConfirmationModal } from '../ui/confirmation-modal';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { ErrorAlert } from '../ui/error-alert';
 import { SuccessAlert } from '../ui/success-alert';
@@ -133,6 +134,15 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    locationValue: string | null;
+    locationLabel: string | null;
+  }>({
+    isOpen: false,
+    locationValue: null,
+    locationLabel: null
+  });
   const [successAlert, setSuccessAlert] = useState<{
     isOpen: boolean;
     message: string;
@@ -203,14 +213,30 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   };
 
   // Handle location removal
-  const handleLocationRemove = async (locationValue: string) => {
-    if (!confirm('Are you sure you want to remove this location?')) return;
+  const openDeleteModal = (locationValue: string) => {
+    setDeleteModalState({
+      isOpen: true,
+      locationValue,
+      locationLabel: getLocationLabel(locationValue)
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalState({
+      isOpen: false,
+      locationValue: null,
+      locationLabel: null
+    });
+  };
+
+  const handleLocationRemove = async () => {
+    if (!deleteModalState.locationValue) return;
 
     try {
       setIsSubmitting(true);
       setError(null);
 
-      const response = await locationService.removeLocationFromEvent(eventId, locationValue);
+      const response = await locationService.removeLocationFromEvent(eventId, deleteModalState.locationValue);
       
       setSuccessAlert({
         isOpen: true,
@@ -219,8 +245,10 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
 
       // Refresh locations
       await fetchEventLocations();
+      closeDeleteModal();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to remove location');
+      closeDeleteModal();
     } finally {
       setIsSubmitting(false);
     }
@@ -295,7 +323,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleLocationRemove(eventLocation.location)}
+                  onClick={() => openDeleteModal(eventLocation.location)}
                   disabled={isSubmitting}
                   className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                 >
@@ -314,6 +342,18 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
         onSubmit={handleLocationSubmit}
         existingLocations={existingLocationValues}
         isSubmitting={isSubmitting}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalState.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleLocationRemove}
+        isLoading={isSubmitting}
+        title="Remove Location"
+        message={`Are you sure you want to remove "${deleteModalState.locationLabel}" from this event? This action cannot be undone.`}
+        confirmText="Remove Location"
+        confirmColor="bg-red-600 hover:bg-red-700"
       />
 
       {/* Success Alert */}

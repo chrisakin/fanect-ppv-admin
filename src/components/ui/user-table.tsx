@@ -225,12 +225,12 @@ export const UserTable: React.FC<UserTableProps> = ({
       />
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200">
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden transition-colors duration-200 min-h-[300px]">
         {loading ? (
           <LoadingSpinner />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[350px]">
               <table className="w-full table-fixed min-w-[1000px]">
                 <colgroup>
                   <col className="w-[250px]" />

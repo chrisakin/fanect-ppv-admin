@@ -171,33 +171,6 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
           </div>
         </div>
 
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Peak Viewers</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-dark-100">
-                {metrics.viewers.peak ? metrics.viewers.peak.toLocaleString() : 'N/A'}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-dark-400">Maximum concurrent</p>
-            </div>
-            <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Chat Messages</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-dark-100">{metrics.chat.count.toLocaleString()}</p>
-              <p className="text-sm text-gray-500 dark:text-dark-400">Total messages</p>
-            </div>
-            <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-lg">
-              <MessageCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Revenue Metrics */}
@@ -389,16 +362,6 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
                 <span className="text-sm text-gray-600 dark:text-dark-300">Replay Views</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-dark-100">{metrics.viewers.replay.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-dark-300">Peak Viewers</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-dark-100">
-                  {metrics.viewers.peak ? metrics.viewers.peak.toLocaleString() : 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-dark-300">Chat Messages</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-dark-100">{metrics.chat.count.toLocaleString()}</span>
-              </div>
             </div>
           </div>
 
@@ -424,6 +387,10 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
                     : formatCurrency(0, selectedCurrency)
                   }
                 </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-dark-300">Chat Messages</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-dark-100">{metrics.chat.count.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-dark-300">Feedback Count</span>

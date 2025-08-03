@@ -30,7 +30,7 @@ export const locationService = {
 
   // Remove location from event
   removeLocationFromEvent: async (eventId: string, locationValue: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/admin/events/update-event-locations/${eventId}/${locationValue}`);
+    const response = await api.delete(`/admin/events/delete-event-location/${locationValue}`);
     return response.data;
   },
 };

@@ -14,7 +14,7 @@ const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-950 transition-colors duration-200">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />

@@ -165,7 +165,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       )}
 
       {/* Table Container */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden">
+      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden min-h-[300px]">
         {loading ? (
           <LoadingSpinner />
         ) : transactions.length === 0 ? (
@@ -176,7 +176,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[350px]">
               <table className="w-full table-fixed min-w-[900px]">
                 <colgroup>
                   <col className="w-[250px]" />
