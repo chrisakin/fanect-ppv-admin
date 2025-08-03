@@ -100,7 +100,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Now save both tokens and user data together
         setAuth(
           { accessToken, refreshToken },
-          profileResponse.data.data
+          {
+            id: profileResponse.data.data._id,
+            name: `${profileResponse.data.data.firstName} ${profileResponse.data.data.lastName}`,
+            email: profileResponse.data.data.email,
+            role: profileResponse.data.data.role
+          }
         );
         
         return { success: true, message: response.message };

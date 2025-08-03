@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 import { useEventTransactionStore } from '../../store/eventTransactionStore';
+import { useFeedbackStore } from '../../store/feedbackStore';
 import LiveStreamPlayer from '../../components/events/LiveStreamPlayer';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
+import { FeedbackTable } from '../../components/feedback/FeedbackTable';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
@@ -17,7 +19,7 @@ const SingleEventPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback'>('details');
   
   // Event Transaction store
   const {
@@ -35,6 +37,23 @@ const SingleEventPage: React.FC = () => {
     clearError: clearEventTransactionError,
     resetStore: resetEventTransactionStore
   } = useEventTransactionStore();
+  
+  // Event Feedback store
+  const {
+    feedbacks: eventFeedbacks,
+    loading: eventFeedbacksLoading,
+    error: eventFeedbacksError,
+    currentPage: eventFeedbacksCurrentPage,
+    totalPages: eventFeedbacksTotalPages,
+    totalDocs: eventFeedbacksTotalDocs,
+    limit: eventFeedbacksLimit,
+    filters: eventFeedbackFilters,
+    setFilters: setEventFeedbackFilters,
+    setCurrentPage: setEventFeedbackCurrentPage,
+    fetchEventFeedbacks,
+    clearError: clearEventFeedbackError,
+    resetStore: resetEventFeedbackStore
+  } = useFeedbackStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -82,6 +101,8 @@ const SingleEventPage: React.FC = () => {
     
     // Reset event transaction store when component mounts or event changes
     resetEventTransactionStore();
+    // Reset event feedback store when component mounts or event changes
+    resetEventFeedbackStore();
   }, [id]);
 
   // Fetch event transactions when transactions tab is active
@@ -105,6 +126,28 @@ const SingleEventPage: React.FC = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [eventTransactionFilters.searchTerm]);
+
+  // Fetch event feedbacks when feedback tab is active
+  useEffect(() => {
+    if (activeTab === 'feedback' && id) {
+      fetchEventFeedbacks(id, eventFeedbacksCurrentPage, eventFeedbackFilters.searchTerm);
+    }
+  }, [activeTab, id, eventFeedbacksCurrentPage, eventFeedbackFilters.startDate, eventFeedbackFilters.endDate]);
+
+  // Handle event feedback search with debounce
+  useEffect(() => {
+    if (activeTab === 'feedback' && id) {
+      const timeoutId = setTimeout(() => {
+        if (eventFeedbacksCurrentPage === 1) {
+          fetchEventFeedbacks(id, 1, eventFeedbackFilters.searchTerm);
+        } else {
+          setEventFeedbackCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [eventFeedbackFilters.searchTerm]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end', eventId: string) => {
@@ -223,6 +266,48 @@ const SingleEventPage: React.FC = () => {
     setEventTransactionFilters({ currency: currencies });
     if (eventTransactionsCurrentPage !== 1) {
       setEventTransactionCurrentPage(1);
+    }
+  };
+
+  // Event Feedback pagination handlers
+  const handleEventFeedbackPreviousPage = () => {
+    if (eventFeedbacksCurrentPage > 1) {
+      setEventFeedbackCurrentPage(eventFeedbacksCurrentPage - 1);
+    }
+  };
+
+  const handleEventFeedbackNextPage = () => {
+    if (eventFeedbacksCurrentPage < eventFeedbacksTotalPages) {
+      setEventFeedbackCurrentPage(eventFeedbacksCurrentPage + 1);
+    }
+  };
+
+  // Handle event feedback filter changes
+  const handleEventFeedbackFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setEventFeedbackFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setEventFeedbackFilters({ [key]: value });
+    }
+    if (eventFeedbacksCurrentPage !== 1) {
+      setEventFeedbackCurrentPage(1);
+    }
+  };
+
+  // Clear event feedback filters
+  const clearEventFeedbackFilters = () => {
+    setEventFeedbackFilters({
+      searchTerm: '',
+      startDate: '',
+      endDate: ''
+    });
+    if (eventFeedbacksCurrentPage !== 1) {
+      setEventFeedbackCurrentPage(1);
     }
   };
 
@@ -486,6 +571,19 @@ const SingleEventPage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <CreditCard className="w-4 h-4" />
                 <span>Transactions</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'feedback'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>Feedback</span>
               </div>
             </button>
           </nav>
@@ -759,6 +857,36 @@ const SingleEventPage: React.FC = () => {
                 showCurrencyFilter={true}
                 selectedCurrencies={eventTransactionFilters.currency}
                 onCurrencyFilterChange={handleEventTransactionCurrencyFilterChange}
+              />
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!eventFeedbacksError}
+                message={eventFeedbacksError || ''}
+                onClose={clearEventFeedbackError}
+              />
+
+              {/* Event Feedback Table with Filters */}
+              <FeedbackTable
+                feedbacks={eventFeedbacks}
+                loading={eventFeedbacksLoading}
+                currentPage={eventFeedbacksCurrentPage}
+                totalPages={eventFeedbacksTotalPages}
+                totalDocs={eventFeedbacksTotalDocs}
+                limit={eventFeedbacksLimit}
+                onPreviousPage={handleEventFeedbackPreviousPage}
+                onNextPage={handleEventFeedbackNextPage}
+                showEventColumn={false}
+                emptyMessage="No Feedback Found"
+                emptyDescription="No feedback has been submitted for this event yet."
+                filters={eventFeedbackFilters}
+                onFilterChange={handleEventFeedbackFilterChange}
+                onClearFilters={clearEventFeedbackFilters}
+                showFilters={true}
               />
             </div>
           )}

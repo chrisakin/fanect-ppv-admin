@@ -65,11 +65,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* User Profile */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
+              {user?.name ? (
+                <span className="text-white text-sm font-bold">
+                  {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </span>
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
             </div>
             <div className="hidden sm:block">
               <p className="text-sm font-medium text-gray-900 dark:text-dark-100">{user?.name || 'Admin User'}</p>
-              <p className="text-xs text-gray-500 dark:text-dark-400">Super Admin</p>
+              <p className="text-xs text-gray-500 dark:text-dark-400">{user?.role || 'Admin'}</p>
             </div>
           </div>
         </div>
