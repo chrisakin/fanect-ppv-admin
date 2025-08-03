@@ -9,6 +9,7 @@ import { SuccessAlert } from '../ui/success-alert';
 
 interface EventLocation {
   location: string;
+  _id: string;
 }
 
 interface LocationsTabProps {
@@ -138,10 +139,12 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     isOpen: boolean;
     locationValue: string | null;
     locationLabel: string | null;
+    id: string | null
   }>({
     isOpen: false,
     locationValue: null,
-    locationLabel: null
+    locationLabel: null,
+    id: null
   });
   const [successAlert, setSuccessAlert] = useState<{
     isOpen: boolean;
@@ -213,11 +216,12 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   };
 
   // Handle location removal
-  const openDeleteModal = (locationValue: string) => {
+  const openDeleteModal = (id: string, locationValue: string) => {
     setDeleteModalState({
       isOpen: true,
       locationValue,
-      locationLabel: getLocationLabel(locationValue)
+      locationLabel: getLocationLabel(locationValue),
+      id: id
     });
   };
 
@@ -225,7 +229,8 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     setDeleteModalState({
       isOpen: false,
       locationValue: null,
-      locationLabel: null
+      locationLabel: null,
+      id: null
     });
   };
 
@@ -236,7 +241,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
       setIsSubmitting(true);
       setError(null);
 
-      const response = await locationService.removeLocationFromEvent(eventId, deleteModalState.locationValue);
+      const response = await locationService.removeLocationFromEvent(eventId, deleteModalState.id as string);
       
       setSuccessAlert({
         isOpen: true,
@@ -323,7 +328,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => openDeleteModal(eventLocation.location)}
+                  onClick={() => openDeleteModal(eventLocation._id, eventLocation.location)}
                   disabled={isSubmitting}
                   className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                 >

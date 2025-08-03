@@ -22,12 +22,12 @@ const Sidebar: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Calendar, label: 'Events', path: '/events' },
     { icon: Users, label: 'Users', path: '/users' },
-    { icon: UserCheck, label: 'Organisers', path: '/organisers' },
-    { icon: Shield, label: 'Admins', path: '/admins' },
-    { icon: CreditCard, label: 'Payments', path: '/payments' },
-    { icon: HeadphonesIcon, label: 'Feedbacks', path: '/feedbacks' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    // { icon: UserCheck, label: 'Organisers', path: '/organisers' },
+    // { icon: Shield, label: 'Admins', path: '/admins' },
+    // { icon: CreditCard, label: 'Payments', path: '/payments' },
+    // { icon: HeadphonesIcon, label: 'Feedbacks', path: '/feedbacks' },
+    // { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    // { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const handleLogout = async () => {

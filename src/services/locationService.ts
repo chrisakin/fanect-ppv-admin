@@ -1,8 +1,8 @@
 import api from '../utils/api';
-import { EventLocationsResponse } from '../types/location';
 
 interface EventLocation {
   location: string;
+  _id: string;
 }
 
 interface EventLocationsApiResponse {
@@ -29,7 +29,7 @@ export const locationService = {
   },
 
   // Remove location from event
-  removeLocationFromEvent: async (eventId: string, locationValue: string): Promise<{ message: string }> => {
+  removeLocationFromEvent: async (_eventId: string, locationValue: string): Promise<{ message: string }> => {
     const response = await api.delete(`/admin/events/delete-event-location/${locationValue}`);
     return response.data;
   },
