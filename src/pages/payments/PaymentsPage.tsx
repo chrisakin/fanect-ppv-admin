@@ -1,135 +1,64 @@
-import React, { useState } from 'react';
-import { RefreshCw, AlertTriangle, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, AlertTriangle, DollarSign, Download, Loader2 } from 'lucide-react';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
-import { UserTransaction, TransactionStatus, PaymentMethod } from '../../types/transaction';
+import { TransactionStatus, PaymentMethod } from '../../types/transaction';
+import { useAllTransactionStore } from '../../store/allTransactionStore';
+import { CurrencyFilterDropdown } from '../../components/ui/currency-filter-dropdown';
+import { ErrorAlert } from '../../components/ui/error-alert';
 
 const PaymentsPage: React.FC = () => {
-  const [filters, setFilters] = useState({
-    status: 'All',
-    giftStatus: 'All',
-    paymentMethod: 'All',
-    searchTerm: '',
-    dateRange: { startDate: null as string | null, endDate: null as string | null }
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+  const {
+    transactions,
+    stats,
+    loading,
+    statsLoading,
+    error,
+    currentPage,
+    totalPages,
+    totalDocs,
+    limit,
+    filters,
+    setFilters,
+    setCurrentPage,
+    fetchAllTransactions,
+    fetchTransactionStats,
+    clearError
+  } = useAllTransactionStore();
 
-  // Mock data - replace with actual API call
-  const transactions: UserTransaction[] = [
-    {
-      _id: 'txn_001',
-      user: 'user_001',
-      eventName: 'Tech Conference 2024',
-      eventDate: '2024-01-15',
-      eventTime: '10:30',
-      eventStatus: 'Live',
-      eventAdminStatus: 'Approved',
-      eventId: 'event_001',
-      amount: 49.99,
-      currency: 'USD',
-      paymentMethod: PaymentMethod.STRIPE,
-      paymentReference: 'ref_001',
-      status: TransactionStatus.SUCCESSFUL,
-      isGift: false,
-      createdAt: '2024-01-15T10:30:00',
-      __v: 0
-    },
-    {
-      _id: 'txn_002',
-      user: 'user_002',
-      eventName: 'Music Festival Live',
-      eventDate: '2024-01-14',
-      eventTime: '16:45',
-      eventStatus: 'Upcoming',
-      eventAdminStatus: 'Approved',
-      eventId: 'event_002',
-      amount: 29.99,
-      currency: 'USD',
-      paymentMethod: PaymentMethod.FLUTTERWAVE,
-      paymentReference: 'ref_002',
-      status: TransactionStatus.PENDING,
-      isGift: false,
-      createdAt: '2024-01-14T16:45:00',
-      __v: 0
-    },
-    {
-      _id: 'txn_003',
-      user: 'user_003',
-      eventName: 'Startup Pitch Night',
-      eventDate: '2024-01-13',
-      eventTime: '08:15',
-      eventStatus: 'Past',
-      eventAdminStatus: 'Approved',
-      eventId: 'event_003',
-      amount: 19.99,
-      currency: 'USD',
-      paymentMethod: PaymentMethod.STRIPE,
-      paymentReference: 'ref_003',
-      status: TransactionStatus.FAILED,
-      isGift: true,
-      createdAt: '2024-01-13T08:15:00',
-      __v: 0
-    },
-    {
-      _id: 'txn_004',
-      user: 'user_004',
-      eventName: 'Tech Conference 2024',
-      eventDate: '2024-01-12',
-      eventTime: '14:20',
-      eventStatus: 'Live',
-      eventAdminStatus: 'Approved',
-      eventId: 'event_001',
-      amount: 99.99,
-      currency: 'USD',
-      paymentMethod: PaymentMethod.FLUTTERWAVE,
-      paymentReference: 'ref_004',
-      status: TransactionStatus.SUCCESSFUL,
-      isGift: false,
-      createdAt: '2024-01-12T14:20:00',
-      __v: 0
-    }
-  ];
+  // Load transactions and stats on component mount
+  useEffect(() => {
+    fetchAllTransactions(currentPage, filters.searchTerm);
+    fetchTransactionStats();
+  }, [currentPage, filters.status, filters.giftStatus, filters.paymentMethod, filters.startDate, filters.endDate, filters.currency]);
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.eventName.toLowerCase().includes(filters.searchTerm.toLowerCase());
-    const matchesStatus = filters.status === 'All' || transaction.status === filters.status;
-    const matchesGiftStatus = filters.giftStatus === 'All' || 
-      (filters.giftStatus === 'gift' && transaction.isGift) ||
-      (filters.giftStatus === 'not-gift' && !transaction.isGift);
-    const matchesPaymentMethod = filters.paymentMethod === 'All' || transaction.paymentMethod === filters.paymentMethod;
-    
-    let matchesDateRange = true;
-    if (filters.dateRange.startDate || filters.dateRange.endDate) {
-      const transactionDate = new Date(transaction.createdAt);
-      if (filters.dateRange.startDate) {
-        matchesDateRange = matchesDateRange && transactionDate >= new Date(filters.dateRange.startDate);
+  // Handle search with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (currentPage === 1) {
+        fetchAllTransactions(1, filters.searchTerm);
+      } else {
+        setCurrentPage(1);
       }
-      if (filters.dateRange.endDate) {
-        matchesDateRange = matchesDateRange && transactionDate <= new Date(filters.dateRange.endDate);
-      }
-    }
-    
-    return matchesSearch && matchesStatus && matchesGiftStatus && matchesPaymentMethod && matchesDateRange;
-  });
+    }, 500);
 
-  const totalRevenue = filteredTransactions
-    .filter(t => t.status === TransactionStatus.SUCCESSFUL)
-    .reduce((sum, t) => sum + t.amount, 0);
+    return () => clearTimeout(timeoutId);
+  }, [filters.searchTerm]);
 
-  const pendingAmount = filteredTransactions
-    .filter(t => t.status === TransactionStatus.PENDING)
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const failedAmount = filteredTransactions
-    .filter(t => t.status === TransactionStatus.FAILED)
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Refresh stats when currency filter changes
+  useEffect(() => {
+    fetchTransactionStats();
+  }, [filters.currency, filters.startDate, filters.endDate]);
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
     if (key === 'dateRange') {
-      setFilters(prev => ({ ...prev, dateRange: JSON.parse(value) }));
+      const dateRange = JSON.parse(value);
+      setFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
     } else {
-      setFilters(prev => ({ ...prev, [key]: value }));
+      setFilters({ [key]: value });
     }
     if (currentPage !== 1) {
       setCurrentPage(1);
@@ -143,7 +72,9 @@ const PaymentsPage: React.FC = () => {
       giftStatus: 'All',
       paymentMethod: 'All',
       searchTerm: '',
-      dateRange: { startDate: null, endDate: null }
+      startDate: '',
+      endDate: '',
+      currency: []
     });
     if (currentPage !== 1) {
       setCurrentPage(1);
@@ -158,66 +89,147 @@ const PaymentsPage: React.FC = () => {
   };
 
   const handleNextPage = () => {
-    // Mock total pages - replace with actual pagination logic
-    const totalPages = Math.ceil(filteredTransactions.length / 10);
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
-  // Convert filters to the format expected by TransactionTable
+  // Handle currency filter change
+  const handleCurrencyFilterChange = (currencies: string[]) => {
+    setFilters({ currency: currencies });
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  // Format currency for display
+  const formatCurrency = (amount: number, currency: string) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+    return formatter.format(amount);
+  };
+
+  // Convert filters to the format expected by TransactionTable  
   const transactionFilters = {
     status: filters.status,
     giftStatus: filters.giftStatus,
     paymentMethod: filters.paymentMethod,
     searchTerm: filters.searchTerm,
-    startDate: filters.dateRange.startDate || '',
-    endDate: filters.dateRange.endDate || ''
+    startDate: filters.startDate,
+    endDate: filters.endDate
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Payments & Transactions</h1>
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-          Export Transactions
-        </button>
+        <div className="flex items-center space-x-3">
+          <CurrencyFilterDropdown
+            selectedCurrencies={filters.currency}
+            onChange={handleCurrencyFilterChange}
+            placeholder="Filter by currencies"
+            className="w-64"
+          />
+          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Download className="w-4 h-4" />
+            <span>Export</span>
+          </button>
+        </div>
       </div>
 
+      {/* Error Message */}
+      <ErrorAlert
+        isOpen={!!error}
+        message={error || ''}
+        onClose={clearError}
+      />
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-green-600">${totalRevenue.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Total Revenue</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {stats ? formatCurrency(stats.totalRevenue, 'USD') : '$0.00'}
+                </p>
+              )}
             </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600" />
+            <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">${pendingAmount.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Total Transactions</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {stats ? stats.totalTransactions.toLocaleString() : '0'}
+                </p>
+              )}
             </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <RefreshCw className="w-6 h-6 text-yellow-600" />
+            <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg">
+              <RefreshCw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Failed</p>
-              <p className="text-2xl font-bold text-red-600">${failedAmount.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Pending</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  {stats ? stats.pendingTransactions.toLocaleString() : '0'}
+                </p>
+              )}
             </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="bg-yellow-100 dark:bg-yellow-900/20 p-3 rounded-lg">
+              <RefreshCw className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Failed</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {stats ? stats.failedTransactions.toLocaleString() : '0'}
+                </p>
+              )}
+            </div>
+            <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
         </div>
@@ -225,18 +237,18 @@ const PaymentsPage: React.FC = () => {
 
       {/* Transactions Table with Filters */}
       <TransactionTable
-        transactions={filteredTransactions}
+        transactions={transactions}
         loading={loading}
         currentPage={currentPage}
-        totalPages={Math.ceil(filteredTransactions.length / 10)}
-        totalDocs={filteredTransactions.length}
-        limit={10}
+        totalPages={totalPages}
+        totalDocs={totalDocs}
+        limit={limit}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
         showUserColumn={true}
         emptyMessage="No Transactions Found"
         emptyDescription="No transactions match your current filters."
-        filters={transactionFilters as any}
+        filters={transactionFilters}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         showFilters={true}

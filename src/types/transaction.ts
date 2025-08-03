@@ -12,6 +12,8 @@ export enum PaymentMethod {
 export interface UserTransaction {
   _id: string;
   user: string;
+  firstName?: string;
+  lastName?: string;
   isGift: boolean;
   paymentMethod: PaymentMethod;
   paymentReference: string;

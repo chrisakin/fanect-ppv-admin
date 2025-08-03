@@ -174,7 +174,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     </th>
                     {showUserColumn && (
                       <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                        User
+                        {transactions.some(t => t.firstName && t.lastName) ? 'Customer' : 'User'}
                       </th>
                     )}
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
@@ -209,8 +209,21 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       </td>
                       {showUserColumn && (
                         <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                            User #{transaction.user}
+                          <div>
+                            {transaction.firstName && transaction.lastName ? (
+                              <>
+                                <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
+                                  {transaction.firstName} {transaction.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-dark-400">
+                                  ID: {transaction.user}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
+                                User #{transaction.user}
+                              </div>
+                            )}
                           </div>
                         </td>
                       )}
