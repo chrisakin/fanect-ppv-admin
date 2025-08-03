@@ -47,7 +47,7 @@ const SettingsPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await profileService.getProfile();
+        const response = (await profileService.getProfile());
         setProfile(response);
         setProfileData({
           firstName: response.firstName,
@@ -122,28 +122,26 @@ const SettingsPage: React.FC = () => {
     }
 
     try {
-      const response = await profileService.updateProfile({
+      (await profileService.updateProfile({
         firstName: profileData.firstName.trim(),
         lastName: profileData.lastName.trim()
-      });
+      }));
 
-      // Update profile state
-      setProfile(response.data);
-      
-      // Update auth context
-      setUser({
-        id: response.data._id,
-        name: `${response.data.firstName} ${response.data.lastName}`,
-        email: response.data.email,
-        role: response.data.role
-      });
+      const response = await profileService.getProfile()
+
+       setProfile(response);
+        setProfileData({
+          firstName: response.firstName,
+          lastName: response.lastName
+        });
 
       // Show success alert
       setSuccessAlert({
         isOpen: true,
-        message: response.message || 'Profile updated successfully!'
+        message: 'Profile updated successfully!'
       });
     } catch (err: any) {
+      console.log(err)
       setProfileErrors({ 
         general: err.response?.data?.message || 'Failed to update profile. Please try again.' 
       });

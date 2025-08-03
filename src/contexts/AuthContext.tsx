@@ -5,7 +5,8 @@ import { useAuthStore } from '../store/authStore';
 
 interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role?: string;
 }
@@ -44,8 +45,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const checkAuth = async () => {
       if (isAuthenticated) {
         try {
-          const response = await authService.getProfile();
-          setUser(response.data);
+          const response = (await authService.getProfile());
+          setUser(response as any);
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           // If profile fetch fails, user might not be properly authenticated

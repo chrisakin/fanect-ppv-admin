@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               )}
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-medium text-gray-900 dark:text-dark-100">{user?.name || 'Admin User'}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-dark-100">{user?.firstName + ' ' + user?.lastName || 'Admin User'}</p>
               <p className="text-xs text-gray-500 dark:text-dark-400">{user?.role || 'Admin'}</p>
             </div>
           </div>

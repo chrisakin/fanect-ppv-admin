@@ -3,7 +3,7 @@ import { UserProfile, UpdateProfileData, ChangePasswordData } from '../types/pro
 
 export const profileService = {
   // Get user profile
-  getProfile: async (): Promise<{ message: string; data: UserProfile }> => {
+  getProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/admin/auth/profile');
     return response.data;
   },

@@ -1,3 +1,4 @@
+import { UserProfile } from '../types/profile';
 import api from '../utils/api';
 
 export interface LoginRequest {
@@ -67,7 +68,7 @@ export const authService = {
   },
 
   // Get user profile
-  getProfile: async (): Promise<{ message: string; data: any }> => {
+  getProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/admin/auth/profile');
     return response.data;
   },

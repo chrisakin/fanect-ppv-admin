@@ -233,7 +233,7 @@ export const UserTable: React.FC<UserTableProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full table-fixed min-w-[1000px]">
                 <colgroup>
-                  <col className="w-[200px]" />
+                  <col className="w-[250px]" />
                   {showUsername && <col className="w-[120px]" />}
                   <col className="w-[180px]" />
                   <col className="w-[100px]" />
