@@ -1,22 +1,36 @@
 import api from '../utils/api';
-import { EventLocationsResponse, CreateLocationData } from '../types/location';
+import { EventLocationsResponse } from '../types/location';
+
+interface EventLocation {
+  location: string;
+}
+
+interface EventLocationsApiResponse {
+  message: string;
+  locations: EventLocation[];
+}
+
+interface LocationPayload {
+  location: string;
+  event: string;
+}
 
 export const locationService = {
   // Get all locations for an event
-  getEventLocations: async (eventId: string): Promise<EventLocationsResponse> => {
+  getEventLocations: async (eventId: string): Promise<EventLocationsApiResponse> => {
     const response = await api.get(`/admin/events/event-locations/${eventId}`);
     return response.data;
   },
 
   // Add location to event
-  addLocationToEvent: async (eventId: string, locationData: CreateLocationData): Promise<{ message: string }> => {
-    const response = await api.post(`/admin/events/update-event-locations/${eventId}`, locationData);
+  addLocationToEvent: async (eventId: string, locationPayload: LocationPayload[]): Promise<{ message: string }> => {
+    const response = await api.post(`/admin/events/update-event-locations/${eventId}`, locationPayload);
     return response.data;
   },
 
   // Remove location from event
-  removeLocationFromEvent: async (eventId: string, locationId: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/admin/events/update-event-locations/${eventId}/${locationId}`);
+  removeLocationFromEvent: async (eventId: string, locationValue: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/admin/events/update-event-locations/${eventId}/${locationValue}`);
     return response.data;
   },
 };
