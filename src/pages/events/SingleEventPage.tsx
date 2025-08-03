@@ -157,7 +157,7 @@ const SingleEventPage: React.FC = () => {
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency === 'NGN' ? 'NGN' : 'USD',
+      currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     });
