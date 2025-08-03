@@ -161,7 +161,7 @@ const PaymentsPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats ? formatCurrency(stats.totalRevenue, 'USD') : '$0.00'}
+                  {stats ? formatCurrency(stats.totalAmount, 'USD') : '$0.00'}
                 </p>
               )}
             </div>
@@ -203,7 +203,7 @@ const PaymentsPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {stats ? stats.pendingTransactions.toLocaleString() : '0'}
+                  {stats ? stats.pending.toLocaleString() : '0'}
                 </p>
               )}
             </div>
@@ -224,7 +224,7 @@ const PaymentsPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {stats ? stats.failedTransactions.toLocaleString() : '0'}
+                  {stats ? stats.failed.toLocaleString() : '0'}
                 </p>
               )}
             </div>

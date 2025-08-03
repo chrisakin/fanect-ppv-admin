@@ -13,13 +13,15 @@ export interface AllTransactionsResponse {
 }
 
 export interface TransactionStats {
-  totalRevenue: number;
   totalTransactions: number;
-  successfulTransactions: number;
-  pendingTransactions: number;
-  failedTransactions: number;
-  totalGifts: number;
-  averageTransactionAmount: number;
+  totalAmount: number;
+  successful: number;
+  pending: number;
+  failed: number;
+  giftTransactions: number;
+  nonGiftTransactions: number;
+  flutterwaveCount: number;
+  stripeCount: number;
 }
 
 export const transactionService = {
@@ -79,6 +81,51 @@ export const transactionService = {
     }
   ): Promise<AllTransactionsResponse> => {
     let url = `/admin/transactions/all-transactions?page=${page}&limit=${limit}`;
+    
+    if (filters) {
+      if (filters.status && filters.status !== 'All') {
+        url += `&status=${filters.status}`;
+      }
+      if (filters.giftStatus && filters.giftStatus !== 'All') {
+        url += `&giftStatus=${filters.giftStatus}`;
+      }
+      if (filters.paymentMethod && filters.paymentMethod !== 'All') {
+        url += `&paymentMethod=${filters.paymentMethod}`;
+      }
+      if (filters.searchTerm && filters.searchTerm.trim()) {
+        url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
+      }
+      if (filters.startDate) {
+        url += `&startDate=${filters.startDate}`;
+      }
+      if (filters.endDate) {
+        url += `&endDate=${filters.endDate}`;
+      }
+      if (filters.currency && filters.currency.trim()) {
+        url += `&currency=${encodeURIComponent(filters.currency)}`;
+      }
+    }
+    
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  // Get event transactions with pagination and filters
+  getEventTransactions: async (
+    eventId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters?: {
+      status?: TransactionStatus | 'All';
+      giftStatus?: 'All' | 'gift' | 'not-gift';
+      paymentMethod?: PaymentMethod | 'All';
+      searchTerm?: string;
+      startDate?: string;
+      endDate?: string;
+      currency?: string; // Comma-separated currency codes
+    }
+  ): Promise<AllTransactionsResponse> => {
+    let url = `/admin/events/single-event-transactions/${eventId}?page=${page}&limit=${limit}`;
     
     if (filters) {
       if (filters.status && filters.status !== 'All') {

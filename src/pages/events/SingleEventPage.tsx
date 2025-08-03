@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
+import { useEventTransactionStore } from '../../store/eventTransactionStore';
 import LiveStreamPlayer from '../../components/events/LiveStreamPlayer';
+import { TransactionTable } from '../../components/transactions/TransactionTable';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
@@ -15,7 +17,24 @@ const SingleEventPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'live'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions'>('details');
+  
+  // Event Transaction store
+  const {
+    transactions: eventTransactions,
+    loading: eventTransactionsLoading,
+    error: eventTransactionsError,
+    currentPage: eventTransactionsCurrentPage,
+    totalPages: eventTransactionsTotalPages,
+    totalDocs: eventTransactionsTotalDocs,
+    limit: eventTransactionsLimit,
+    filters: eventTransactionFilters,
+    setFilters: setEventTransactionFilters,
+    setCurrentPage: setEventTransactionCurrentPage,
+    fetchEventTransactions,
+    clearError: clearEventTransactionError,
+    resetStore: resetEventTransactionStore
+  } = useEventTransactionStore();
   
   // Modal states
   const [modalState, setModalState] = useState<{
@@ -60,7 +79,32 @@ const SingleEventPage: React.FC = () => {
     };
 
     fetchEvent();
+    
+    // Reset event transaction store when component mounts or event changes
+    resetEventTransactionStore();
   }, [id]);
+
+  // Fetch event transactions when transactions tab is active
+  useEffect(() => {
+    if (activeTab === 'transactions' && id) {
+      fetchEventTransactions(id, eventTransactionsCurrentPage, eventTransactionFilters.searchTerm);
+    }
+  }, [activeTab, id, eventTransactionsCurrentPage, eventTransactionFilters.status, eventTransactionFilters.giftStatus, eventTransactionFilters.paymentMethod, eventTransactionFilters.startDate, eventTransactionFilters.endDate, eventTransactionFilters.currency]);
+
+  // Handle event transaction search with debounce
+  useEffect(() => {
+    if (activeTab === 'transactions' && id) {
+      const timeoutId = setTimeout(() => {
+        if (eventTransactionsCurrentPage === 1) {
+          fetchEventTransactions(id, 1, eventTransactionFilters.searchTerm);
+        } else {
+          setEventTransactionCurrentPage(1);
+        }
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [eventTransactionFilters.searchTerm]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end', eventId: string) => {
@@ -125,6 +169,60 @@ const SingleEventPage: React.FC = () => {
       closeConfirmationModal();
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Event Transaction pagination handlers
+  const handleEventTransactionPreviousPage = () => {
+    if (eventTransactionsCurrentPage > 1) {
+      setEventTransactionCurrentPage(eventTransactionsCurrentPage - 1);
+    }
+  };
+
+  const handleEventTransactionNextPage = () => {
+    if (eventTransactionsCurrentPage < eventTransactionsTotalPages) {
+      setEventTransactionCurrentPage(eventTransactionsCurrentPage + 1);
+    }
+  };
+
+  // Handle event transaction filter changes
+  const handleEventTransactionFilterChange = (key: string, value: string) => {
+    if (key === 'dateRange') {
+      // Handle date range separately
+      const dateRange = JSON.parse(value);
+      setEventTransactionFilters({ 
+        startDate: dateRange.startDate || '',
+        endDate: dateRange.endDate || ''
+      });
+    } else {
+      setEventTransactionFilters({ [key]: value });
+    }
+    if (eventTransactionsCurrentPage !== 1) {
+      setEventTransactionCurrentPage(1);
+    }
+  };
+
+  // Clear event transaction filters
+  const clearEventTransactionFilters = () => {
+    setEventTransactionFilters({
+      status: 'All',
+      giftStatus: 'All',
+      paymentMethod: 'All',
+      searchTerm: '',
+      startDate: '',
+      endDate: '',
+      currency: []
+    });
+    if (eventTransactionsCurrentPage !== 1) {
+      setEventTransactionCurrentPage(1);
+    }
+  };
+
+  // Handle currency filter change
+  const handleEventTransactionCurrencyFilterChange = (currencies: string[]) => {
+    setEventTransactionFilters({ currency: currencies });
+    if (eventTransactionsCurrentPage !== 1) {
+      setEventTransactionCurrentPage(1);
     }
   };
 
@@ -377,6 +475,19 @@ const SingleEventPage: React.FC = () => {
                 )}
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'transactions'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <CreditCard className="w-4 h-4" />
+                <span>Transactions</span>
+              </div>
+            </button>
           </nav>
         </div>
         {/* Tab Content */}
@@ -610,6 +721,46 @@ const SingleEventPage: React.FC = () => {
 
           {activeTab === 'live' && (
             <LiveStreamPlayer playbackUrl={event.ivsPlaybackUrl as string} />
+          )}
+
+          {activeTab === 'transactions' && (
+            <div className="space-y-6">
+              {/* Error Message */}
+              <ErrorAlert
+                isOpen={!!eventTransactionsError}
+                message={eventTransactionsError || ''}
+                onClose={clearEventTransactionError}
+              />
+
+              {/* Event Transactions Table with Filters */}
+              <TransactionTable
+                transactions={eventTransactions}
+                loading={eventTransactionsLoading}
+                currentPage={eventTransactionsCurrentPage}
+                totalPages={eventTransactionsTotalPages}
+                totalDocs={eventTransactionsTotalDocs}
+                limit={eventTransactionsLimit}
+                onPreviousPage={handleEventTransactionPreviousPage}
+                onNextPage={handleEventTransactionNextPage}
+                showUserColumn={true}
+                emptyMessage="No Transactions Found"
+                emptyDescription="No transactions have been made for this event yet."
+                filters={{
+                  status: eventTransactionFilters.status,
+                  giftStatus: eventTransactionFilters.giftStatus,
+                  paymentMethod: eventTransactionFilters.paymentMethod,
+                  searchTerm: eventTransactionFilters.searchTerm,
+                  startDate: eventTransactionFilters.startDate,
+                  endDate: eventTransactionFilters.endDate
+                }}
+                onFilterChange={handleEventTransactionFilterChange}
+                onClearFilters={clearEventTransactionFilters}
+                showFilters={true}
+                showCurrencyFilter={true}
+                selectedCurrencies={eventTransactionFilters.currency}
+                onCurrencyFilterChange={handleEventTransactionCurrencyFilterChange}
+              />
+            </div>
           )}
         </div>
       </div>

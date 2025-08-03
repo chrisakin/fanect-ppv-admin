@@ -1,6 +1,7 @@
 import React from 'react';
 import { CreditCard, Filter, Gift } from 'lucide-react';
 import { UserTransaction, TransactionStatus, PaymentMethod, TransactionFilters } from '../../types/transaction';
+import { CurrencyFilterDropdown } from '../ui/currency-filter-dropdown';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
 import { FilterBar } from '../ui/filter-bar';
@@ -23,6 +24,10 @@ interface TransactionTableProps {
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
   showFilters?: boolean;
+  // Currency filter props
+  showCurrencyFilter?: boolean;
+  selectedCurrencies?: string[];
+  onCurrencyFilterChange?: (currencies: string[]) => void;
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
@@ -40,7 +45,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   filters,
   onFilterChange,
   onClearFilters,
-  showFilters = false
+  showFilters = false,
+  showCurrencyFilter = false,
+  selectedCurrencies = [],
+  onCurrencyFilterChange
 }) => {
   const getTransactionStatusColor = (status: TransactionStatus) => {
     switch (status) {
@@ -132,6 +140,18 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Currency Filter */}
+      {showCurrencyFilter && onCurrencyFilterChange && (
+        <div className="flex justify-end">
+          <CurrencyFilterDropdown
+            selectedCurrencies={selectedCurrencies}
+            onChange={onCurrencyFilterChange}
+            placeholder="Filter by currencies"
+            className="w-64"
+          />
+        </div>
+      )}
+
       {/* Filters */}
       {showFilters && filters && onFilterChange && onClearFilters && (
         <FilterBar
@@ -214,9 +234,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                               <>
                                 <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
                                   {transaction.firstName} {transaction.lastName}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-dark-400">
-                                  ID: {transaction.user}
                                 </div>
                               </>
                             ) : (
