@@ -31,9 +31,9 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
     { icon: UserCheck, label: 'Organizers', path: '/organisers' },
     { icon: Shield, label: 'Admins', path: '/admins' },
     { icon: CreditCard, label: 'Payments', path: '/payments' },
+    { icon: HeadphonesIcon, label: 'Feedbacks', path: '/feedbacks' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Settings, label: 'Settings', path: '/settings' },
-    { icon: HeadphonesIcon, label: 'Support', path: '/support' }
   ];
 
   const handleLogout = async () => {

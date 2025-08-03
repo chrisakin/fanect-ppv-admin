@@ -157,7 +157,7 @@ const PaymentsPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats ? formatCurrency(stats.totalAmount, stats.currency || 'USD') : '$0.00'}
+                  {stats?.totalAmount ? formatCurrency(stats.totalAmount, stats.currency || 'USD') : 'N.A'}
                 </p>
               )}
             </div>

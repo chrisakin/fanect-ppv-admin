@@ -126,17 +126,7 @@ const SupportPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{selectedTicket.subject}</h1>
-                <p className="text-gray-600 mt-1">Ticket #{selectedTicket.id}</p>
                 <div className="flex items-center space-x-4 mt-2">
-                  <div className="flex items-center space-x-1">
-                    {getStatusIcon(selectedTicket.status)}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                      {selectedTicket.status}
-                    </span>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
-                    {selectedTicket.priority} Priority
-                  </span>
                   {selectedTicket.rating && (
                     <div className="flex items-center space-x-1">
                       {renderStars(selectedTicket.rating)}
@@ -144,17 +134,6 @@ const SupportPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="flex space-x-3">
-                <select
-                  value={selectedTicket.status}
-                  onChange={(e) => updateTicketStatus(selectedTicket.id, e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
-                </select>
               </div>
             </div>
           </div>
@@ -184,40 +163,9 @@ const SupportPage: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Issue Description</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Comment</h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-gray-900">{selectedTicket.message}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Response</h3>
-                <textarea
-                  placeholder="Type your response here..."
-                  className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-                <div className="mt-4 flex space-x-3">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    Send Response
-                  </button>
-                  <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                    Save Draft
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Previous Responses</h3>
-                <div className="space-y-3">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-blue-900">Support Agent</span>
-                      <span className="text-sm text-blue-600">2 hours ago</span>
-                    </div>
-                    <p className="text-blue-800">Thank you for contacting us. We're looking into this issue and will get back to you shortly.</p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -230,61 +178,7 @@ const SupportPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Support & Feedback</h1>
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-          Export Reports
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Open Tickets</p>
-              <p className="text-2xl font-bold text-red-600">{tickets.filter(t => t.status === 'Open').length}</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-yellow-600">{tickets.filter(t => t.status === 'In Progress').length}</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Resolved</p>
-              <p className="text-2xl font-bold text-green-600">{tickets.filter(t => t.status === 'Resolved').length}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Avg. Rating</p>
-              <p className="text-2xl font-bold text-blue-600">4.2</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Star className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Feedback & Ratings</h1>
       </div>
 
       {/* Filters */}
@@ -300,28 +194,6 @@ const SupportPage: React.FC = () => {
               className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Status</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Priority</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
 
           <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
             Clear Filters
@@ -334,31 +206,19 @@ const SupportPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full table-fixed min-w-[1000px]">
             <colgroup>
-              <col className="w-[200px]" />
               <col className="w-[150px]" />
               <col className="w-[150px]" />
               <col className="w-[100px]" />
               <col className="w-[120px]" />
               <col className="w-[120px]" />
-              <col className="w-[120px]" />
-              <col className="w-[100px]" />
             </colgroup>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ticket
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
+                  User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Event
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rating
@@ -376,31 +236,12 @@ const SupportPage: React.FC = () => {
                 <tr key={ticket.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
-                      <div className="text-sm text-gray-500">#{ticket.id}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
                       <div className="text-sm font-medium text-gray-900">{ticket.userName}</div>
                       <div className="text-sm text-gray-500">{ticket.userEmail}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {ticket.eventName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1">
-                      {getStatusIcon(ticket.status)}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                        {ticket.status}
-                      </span>
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {ticket.rating ? (
