@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Search, X, Plus, Trash2 } from 'lucide-react';
+import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { locationService } from '../../services/locationService';
+import { LocationModal } from './LocationModal';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { ErrorAlert } from '../ui/error-alert';
 import { SuccessAlert } from '../ui/success-alert';
@@ -9,17 +10,12 @@ interface EventLocation {
   location: string;
 }
 
-interface LocationOption {
-  value: string;
-  label: string;
-}
-
 interface LocationsTabProps {
   eventId: string;
 }
 
-// List of all available locations (countries)
-const ALL_LOCATIONS: LocationOption[] = [
+// List of all available locations for label lookup
+const ALL_LOCATIONS = [
   { value: 'US', label: 'United States' },
   { value: 'CA', label: 'Canada' },
   { value: 'GB', label: 'United Kingdom' },
@@ -129,14 +125,13 @@ const ALL_LOCATIONS: LocationOption[] = [
   { value: 'FM', label: 'Micronesia' },
   { value: 'MH', label: 'Marshall Islands' },
   { value: 'NZ', label: 'New Zealand' }
-].sort((a, b) => a.label.localeCompare(b.label));
+];
 
 export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successAlert, setSuccessAlert] = useState<{
     isOpen: boolean;
@@ -165,36 +160,22 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     fetchEventLocations();
   }, [eventId]);
 
-  // Filter locations based on search term
-  const filteredLocations = ALL_LOCATIONS.filter(location => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      location.label.toLowerCase().includes(searchLower) ||
-      location.value.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // Get available locations (not already selected)
-  const availableLocations = filteredLocations.filter(location => 
-    !eventLocations.some(eventLoc => eventLoc.location === location.value)
-  );
-
   // Get location label by value
   const getLocationLabel = (locationValue: string) => {
     const location = ALL_LOCATIONS.find(loc => loc.value === locationValue);
     return location ? location.label : locationValue;
   };
 
-  // Handle location selection
-  const handleLocationSelect = async (locationValue: string) => {
+  // Handle multiple location selection
+  const handleLocationSubmit = async (selectedLocationValues: string[]) => {
     try {
       setIsSubmitting(true);
       setError(null);
 
-      // Create the payload with all selected locations plus the new one
+      // Create the payload with all existing locations plus the new ones
       const updatedLocations = [
         ...eventLocations,
-        { location: locationValue }
+        ...selectedLocationValues.map(value => ({ location: value }))
       ];
 
       // Send to backend
@@ -207,16 +188,15 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
       
       setSuccessAlert({
         isOpen: true,
-        message: response.message || 'Location added successfully!'
+        message: response.message || `${selectedLocationValues.length} location${selectedLocationValues.length > 1 ? 's' : ''} added successfully!`
       });
 
       // Refresh locations
       await fetchEventLocations();
       
-      setIsDropdownOpen(false);
-      setSearchTerm('');
+      setIsModalOpen(false);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add location');
+      setError(err.response?.data?.message || 'Failed to add locations');
     } finally {
       setIsSubmitting(false);
     }
@@ -246,6 +226,9 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     }
   };
 
+  // Get existing location values for the modal
+  const existingLocationValues = eventLocations.map(loc => loc.location);
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -256,87 +239,15 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Event Locations</h3>
         
-        {/* Location Search Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            disabled={isSubmitting || availableLocations.length === 0}
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Location</span>
-          </button>
-
-          {isDropdownOpen && (
-            <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-[9999] max-h-80 overflow-hidden">
-              {/* Search Input */}
-              <div className="p-3 border-b border-gray-200 dark:border-dark-700">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
-                  <input
-                    type="text"
-                    placeholder="Search locations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-dark-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 text-sm"
-                    autoFocus
-                  />
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-dark-300"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Location List */}
-              <div className="max-h-60 overflow-y-auto">
-                {availableLocations.length > 0 ? (
-                  availableLocations.map((location) => (
-                    <button
-                      key={location.value}
-                      type="button"
-                      onClick={() => handleLocationSelect(location.value)}
-                      disabled={isSubmitting}
-                      className="w-full px-3 py-3 text-left hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors duration-200 flex items-center space-x-3 disabled:opacity-50"
-                    >
-                      <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                          {location.label}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-dark-400">
-                          {location.value}
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-dark-400">
-                    {searchTerm ? `No locations found matching "${searchTerm}"` : 'All locations have been added'}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Backdrop */}
-          {isDropdownOpen && (
-            <div 
-              className="fixed inset-0 z-[9998]" 
-              onClick={() => {
-                setIsDropdownOpen(false);
-                setSearchTerm('');
-              }}
-            />
-          )}
-        </div>
+        {/* Add Location Button */}
+        <button
+          onClick={() => setIsModalOpen(true)}
+          disabled={isSubmitting}
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Location</span>
+        </button>
       </div>
 
       {/* Error Message */}
@@ -353,7 +264,7 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">No Locations Added</h3>
           <p className="text-gray-500 dark:text-dark-400 mb-4">Add locations where this event will be available.</p>
           <button
-            onClick={() => setIsDropdownOpen(true)}
+            onClick={() => setIsModalOpen(true)}
             disabled={isSubmitting}
             className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50"
           >
@@ -395,6 +306,15 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
           </div>
         </div>
       )}
+
+      {/* Location Modal */}
+      <LocationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleLocationSubmit}
+        existingLocations={existingLocationValues}
+        isSubmitting={isSubmitting}
+      />
 
       {/* Success Alert */}
       <SuccessAlert

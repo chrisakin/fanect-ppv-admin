@@ -114,7 +114,7 @@ const SingleEventPage: React.FC = () => {
     if (activeTab === 'transactions' && id) {
       fetchEventTransactions(id, eventTransactionsCurrentPage, eventTransactionFilters.searchTerm);
     }
-  }, [activeTab, id, eventTransactionsCurrentPage, eventTransactionFilters.status, eventTransactionFilters.giftStatus, eventTransactionFilters.paymentMethod, eventTransactionFilters.startDate, eventTransactionFilters.endDate, eventTransactionFilters.currency]);
+  }, [activeTab, id, eventTransactionsCurrentPage, eventTransactionFilters.status, eventTransactionFilters.giftStatus, eventTransactionFilters.paymentMethod, eventTransactionFilters.startDate, eventTransactionFilters.endDate, eventTransactionFilters.currency, fetchEventTransactions, eventTransactionFilters.searchTerm]);
 
   // Handle event transaction search with debounce
   useEffect(() => {
@@ -129,14 +129,14 @@ const SingleEventPage: React.FC = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [eventTransactionFilters.searchTerm]);
+  }, [activeTab, eventTransactionFilters.searchTerm, eventTransactionsCurrentPage, fetchEventTransactions, id, setEventTransactionCurrentPage]);
 
   // Fetch event feedbacks when feedback tab is active
   useEffect(() => {
     if (activeTab === 'feedback' && id) {
       fetchEventFeedbacks(id, eventFeedbacksCurrentPage, eventFeedbackFilters.searchTerm);
     }
-  }, [activeTab, id, eventFeedbacksCurrentPage, eventFeedbackFilters.startDate, eventFeedbackFilters.endDate]);
+  }, [activeTab, id, eventFeedbacksCurrentPage, eventFeedbackFilters.startDate, eventFeedbackFilters.endDate, fetchEventFeedbacks, eventFeedbackFilters.searchTerm]);
 
   // Handle event feedback search with debounce
   useEffect(() => {
@@ -151,7 +151,7 @@ const SingleEventPage: React.FC = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [eventFeedbackFilters.searchTerm]);
+  }, [activeTab, eventFeedbackFilters.searchTerm, eventFeedbacksCurrentPage, fetchEventFeedbacks, id, setEventFeedbackCurrentPage]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end', eventId: string) => {
