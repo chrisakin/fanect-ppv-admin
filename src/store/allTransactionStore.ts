@@ -117,7 +117,7 @@ export const useAllTransactionStore = create<AllTransactionState>((set, get) => 
       };
       
       const response = await transactionService.getTransactionStats(apiFilters);
-      set({ stats: response.data });
+      set({ stats: response.stats });
     } catch (err: any) {
       console.error('Error fetching transaction stats:', err);
       // Don't set error for stats as it's not critical

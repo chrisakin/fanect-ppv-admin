@@ -15,6 +15,7 @@ export interface AllTransactionsResponse {
 export interface TransactionStats {
   totalTransactions: number;
   totalAmount: number;
+  currency: string;
   successful: number;
   pending: number;
   failed: number;
@@ -162,7 +163,7 @@ export const transactionService = {
       startDate?: string;
       endDate?: string;
     }
-  ): Promise<{ message: string; data: TransactionStats }> => {
+  ): Promise<{ message: string; stats: TransactionStats }> => {
     let url = '/admin/transactions/transaction-stats';
     const params = new URLSearchParams();
     

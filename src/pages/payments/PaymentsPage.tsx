@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, DollarSign, Download, Loader2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { RefreshCw, AlertTriangle, DollarSign, Loader2, CreditCard, Gift, TrendingUp } from 'lucide-react';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
-import { TransactionStatus, PaymentMethod } from '../../types/transaction';
 import { useAllTransactionStore } from '../../store/allTransactionStore';
 import { CurrencyFilterDropdown } from '../../components/ui/currency-filter-dropdown';
 import { ErrorAlert } from '../../components/ui/error-alert';
@@ -145,7 +144,8 @@ const PaymentsPage: React.FC = () => {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 lg:gap-6">
+        {/* Total Revenue */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -157,7 +157,7 @@ const PaymentsPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats ? formatCurrency(stats.totalAmount, 'USD') : '$0.00'}
+                  {stats ? formatCurrency(stats.totalAmount, stats.currency || 'USD') : '$0.00'}
                 </p>
               )}
             </div>
@@ -167,6 +167,7 @@ const PaymentsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Total Transactions */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -183,11 +184,34 @@ const PaymentsPage: React.FC = () => {
               )}
             </div>
             <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-lg">
-              <RefreshCw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
+        {/* Successful Transactions */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Successful</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {stats ? stats.successful.toLocaleString() : '0'}
+                </p>
+              )}
+            </div>
+            <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Transactions */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -208,7 +232,11 @@ const PaymentsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Second Row of Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 lg:gap-6">
+        {/* Failed Transactions */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -226,6 +254,83 @@ const PaymentsPage: React.FC = () => {
             </div>
             <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Gift Transactions */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Gift Transactions</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                  {stats ? stats.giftTransactions.toLocaleString() : '0'}
+                </p>
+              )}
+            </div>
+            <div className="bg-pink-100 dark:bg-pink-900/20 p-3 rounded-lg">
+              <Gift className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Regular Transactions */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Regular Purchases</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {stats ? stats.nonGiftTransactions.toLocaleString() : '0'}
+                </p>
+              )}
+            </div>
+            <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-lg">
+              <CreditCard className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Methods Breakdown */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Payment Methods</p>
+              {statsLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-400">Loading...</span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 dark:text-dark-400">Flutterwave:</span>
+                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                      {stats ? stats.flutterwaveCount.toLocaleString() : '0'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 dark:text-dark-400">Stripe:</span>
+                    <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                      {stats ? stats.stripeCount.toLocaleString() : '0'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-lg">
+              <CreditCard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
         </div>
