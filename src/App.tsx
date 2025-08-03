@@ -18,6 +18,7 @@ import SingleAdminPage from './pages/admins/SingleAdminPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
 import SupportPage from './pages/support/SupportPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import AnalyticsPage from './pages/analytics/AnalyticsPage';
 
 function App() {
   return (
@@ -47,7 +48,7 @@ function App() {
               <Route path="/admins/:id" element={<SingleAdminPage />} />
               <Route path="/organisers" element={<OrganisersPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
-              <Route path="/analytics" element={<div className="p-8"><h1 className="text-3xl font-bold text-gray-900 dark:text-dark-100">Analytics - Coming Soon</h1></div>} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/feedbacks" element={<SupportPage />} />
             </Route>

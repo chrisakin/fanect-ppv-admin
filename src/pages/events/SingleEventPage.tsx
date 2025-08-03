@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3 } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 import { useEventTransactionStore } from '../../store/eventTransactionStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
 import LiveStreamPlayer from '../../components/events/LiveStreamPlayer';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
 import { FeedbackTable } from '../../components/feedback/FeedbackTable';
+import { LocationsTab } from '../../components/locations/LocationsTab';
+import { EventMetricsTab } from '../../components/events/EventMetricsTab';
+import { DescriptionModal } from '../../components/ui/description-modal';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
 import { ErrorAlert } from '../../components/ui/error-alert';
@@ -19,7 +22,8 @@ const SingleEventPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback' | 'locations' | 'metrics'>('details');
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   
   // Event Transaction store
   const {
@@ -311,6 +315,25 @@ const SingleEventPage: React.FC = () => {
     }
   };
 
+  // Helper function to truncate description to first two lines
+  const truncateDescription = (text: string, maxLines: number = 2) => {
+    const lines = text.split('\n');
+    if (lines.length <= maxLines) {
+      return text;
+    }
+    return lines.slice(0, maxLines).join('\n');
+  };
+
+  // Helper function to format description with proper line breaks
+  const formatDescription = (text: string) => {
+    return text.split('\n').map((line, index) => (
+      <span key={index}>
+        {line}
+        {index < text.split('\n').length - 1 && <br />}
+      </span>
+    ));
+  };
+
   const getStatusIcon = (adminStatus: string) => {
     switch (adminStatus) {
       case 'Approved':
@@ -520,9 +543,19 @@ const SingleEventPage: React.FC = () => {
               
               {/* Description below the title and buttons */}
               {event.description && (
-                <p className="text-gray-600 dark:text-dark-300 mt-4 break-words">
-                  {event.description}
-                </p>
+                <div className="mt-4">
+                  <div className="text-gray-600 dark:text-dark-300 break-words">
+                    {formatDescription(truncateDescription(event.description))}
+                  </div>
+                  {event.description.split('\n').length > 2 && (
+                    <button
+                      onClick={() => setIsDescriptionModalOpen(true)}
+                      className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 text-sm font-medium mt-2 transition-colors duration-200"
+                    >
+                      View more...
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -584,6 +617,32 @@ const SingleEventPage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <MessageCircle className="w-4 h-4" />
                 <span>Feedback</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('locations')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'locations'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <MapPin className="w-4 h-4" />
+                <span>Locations</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('metrics')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'metrics'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Event Metrics</span>
               </div>
             </button>
           </nav>
@@ -890,8 +949,24 @@ const SingleEventPage: React.FC = () => {
               />
             </div>
           )}
+
+          {activeTab === 'locations' && (
+            <LocationsTab eventId={event._id} />
+          )}
+
+          {activeTab === 'metrics' && (
+            <EventMetricsTab eventId={event._id} />
+          )}
         </div>
       </div>
+
+      {/* Description Modal */}
+      <DescriptionModal
+        isOpen={isDescriptionModalOpen}
+        onClose={() => setIsDescriptionModalOpen(false)}
+        title="Event Description"
+        description={event?.description || ''}
+      />
 
       <ConfirmationModal
         isOpen={modalState.isOpen}

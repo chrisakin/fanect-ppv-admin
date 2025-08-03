@@ -1,6 +1,7 @@
 import React from 'react';
-import { Star, MessageCircle, Calendar } from 'lucide-react';
+import { Star, MessageCircle, Calendar, Eye } from 'lucide-react';
 import { Feedback, FeedbackFilters } from '../../types/feedback';
+import { FeedbackModal } from '../ui/feedback-modal';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
 import { FilterBar } from '../ui/filter-bar';
@@ -42,6 +43,9 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
   onClearFilters,
   showFilters = false
 }) => {
+  const [selectedFeedback, setSelectedFeedback] = React.useState<Feedback | null>(null);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = React.useState(false);
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -49,6 +53,16 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
         className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300 dark:text-gray-600'}`}
       />
     ));
+  };
+
+  const truncateText = (text: string, maxLength: number = 100) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  const handleViewFeedback = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setIsFeedbackModalOpen(true);
   };
 
   // Filter configuration
@@ -116,6 +130,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                   <col className="w-[120px]" />
                   <col className="w-[300px]" />
                   <col className="w-[120px]" />
+                  <col className="w-[100px]" />
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
                   <tr>
@@ -135,6 +150,9 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Date
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -181,8 +199,8 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                       <td className="px-4 lg:px-6 py-4">
                         <div className="text-sm text-gray-900 dark:text-dark-100">
                           {feedback.comments ? (
-                            <div className="max-w-xs truncate" title={feedback.comments}>
-                              {feedback.comments}
+                            <div className="max-w-xs" title={feedback.comments}>
+                              {truncateText(feedback.comments, 80)}
                             </div>
                           ) : (
                             <span className="text-gray-400 dark:text-dark-500 italic">No comments</span>
@@ -196,6 +214,15 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                         <div className="text-sm text-gray-500 dark:text-dark-400">
                           {new Date(feedback.createdAt).toLocaleTimeString()}
                         </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleViewFeedback(feedback)}
+                          className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors duration-200 flex items-center space-x-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>View</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -215,6 +242,16 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
           </>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => {
+          setIsFeedbackModalOpen(false);
+          setSelectedFeedback(null);
+        }}
+        feedback={selectedFeedback}
+      />
     </div>
   );
 };
