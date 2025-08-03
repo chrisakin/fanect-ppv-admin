@@ -78,7 +78,6 @@ const SupportPage: React.FC = () => {
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <MessageCircle className="w-8 h-8 text-primary-600" />
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">Feedback & Ratings</h1>
         </div>
       </div>
