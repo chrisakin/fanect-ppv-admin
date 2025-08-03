@@ -134,10 +134,6 @@ const PaymentsPage: React.FC = () => {
             placeholder="Filter by currencies"
             className="w-64"
           />
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-            <Download className="w-4 h-4" />
-            <span>Export</span>
-          </button>
         </div>
       </div>
 
