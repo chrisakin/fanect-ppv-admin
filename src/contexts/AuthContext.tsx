@@ -102,10 +102,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setAuth(
           { accessToken, refreshToken },
           {
-            id: profileResponse.data.data._id,
-            name: `${profileResponse.data.data.firstName} ${profileResponse.data.data.lastName}`,
-            email: profileResponse.data.data.email,
-            role: profileResponse.data.data.role
+            id: profileResponse.data._id,
+            firstName: profileResponse.data.firstName,
+            lastName: profileResponse.data.lastName,
+            email: profileResponse.data.email,
+            role: profileResponse.data.role
           }
         );
         
