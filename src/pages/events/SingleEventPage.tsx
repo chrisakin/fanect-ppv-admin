@@ -631,7 +631,7 @@ const SingleEventPage: React.FC = () => {
                 <MapPin className="w-4 h-4" />
                 <span>Locations</span>
               </div>
-            </button>
+            </button>*/}
             <button
               onClick={() => setActiveTab('metrics')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
@@ -644,7 +644,7 @@ const SingleEventPage: React.FC = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span>Event Metrics</span>
               </div>
-            </button> */}
+            </button> 
           </nav>
         </div>
         {/* Tab Content */}
