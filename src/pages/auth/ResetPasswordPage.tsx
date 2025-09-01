@@ -99,12 +99,12 @@ const ResetPasswordPage: React.FC = () => {
         <div className="max-w-md w-full space-y-6 lg:space-y-8 p-6 lg:p-8">
           <div className="text-center space-y-6">
             <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+              {/* <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
                 <Activity className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
-              </div>
+              </div> */}
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">FaNect</h1>
-                <p className="text-sm text-gray-500 dark:text-dark-400">Admin Portal</p>
+                <h1 className="text-2xl lg:text-3xl font-bold text-green-600">FaNect</h1>
+                <p className="text-sm text-green-600">Admin Portal</p>
               </div>
             </div>
             
@@ -138,12 +138,12 @@ const ResetPasswordPage: React.FC = () => {
       <div className="max-w-md w-full space-y-6 lg:space-y-8 p-6 lg:p-8">
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
+            {/* <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
               <Activity className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
-            </div>
+            </div> */}
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-100">FaNect</h1>
-              <p className="text-sm text-gray-500 dark:text-dark-400">Admin Portal</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-green-600">FaNect</h1>
+              <p className="text-sm text-green-600">Admin Portal</p>
             </div>
           </div>
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100">

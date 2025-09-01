@@ -11,7 +11,6 @@ import {
   BarChart3,
   Settings,
   HeadphonesIcon,
-  Activity,
   LogOut,
   X
 } from 'lucide-react';
@@ -30,10 +29,10 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
      { icon: Users, label: 'Users', path: '/users' },
      { icon: UserCheck, label: 'Organizers', path: '/organisers' },
      { icon: Shield, label: 'Admins', path: '/admins' },
-    // { icon: CreditCard, label: 'Payments', path: '/payments' },
-    // { icon: HeadphonesIcon, label: 'Feedbacks', path: '/feedbacks' },
-    // { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-    // { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: CreditCard, label: 'Payments', path: '/payments' },
+    { icon: HeadphonesIcon, label: 'Feedbacks', path: '/feedbacks' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const handleLogout = async () => {
@@ -60,12 +59,12 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+            {/* <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
               <Activity className="w-6 h-6 text-white" />
-            </div>
+            </div> */}
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-dark-100">FaNect</h1>
-              <p className="text-sm text-gray-500 dark:text-dark-400">Admin Portal</p>
+              <h1 className="text-xl font-bold text-green-600">FaNect</h1>
+              <p className="text-sm text-green-600">Admin Portal</p>
             </div>
           </div>
           <button

@@ -593,7 +593,7 @@ const SingleEventPage: React.FC = () => {
                 )}
               </div>
             </button>
-            {/* <button
+            <button
               onClick={() => setActiveTab('transactions')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                 activeTab === 'transactions'
@@ -631,7 +631,7 @@ const SingleEventPage: React.FC = () => {
                 <MapPin className="w-4 h-4" />
                 <span>Locations</span>
               </div>
-            </button>*/}
+            </button>
             <button
               onClick={() => setActiveTab('metrics')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
