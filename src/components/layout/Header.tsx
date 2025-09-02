@@ -25,14 +25,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </button>
           
           {/* Search Bar */}
-          <div className="relative hidden sm:block">
+          {/* <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
             <input
               type="text"
               placeholder="Search events, users, or transactions..."
               className="pl-10 pr-4 py-2 w-64 lg:w-96 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-900 text-gray-900 dark:text-dark-100 placeholder-gray-400 dark:placeholder-dark-400 transition-colors duration-200"
             />
-          </div>
+          </div> */}
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -56,10 +56,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           
           {/* Notifications */}
           <div className="relative">
-            <Bell className="w-6 h-6 text-gray-600 dark:text-dark-300 cursor-pointer hover:text-gray-900 dark:hover:text-dark-100 transition-colors duration-200" />
+            {/* <Bell className="w-6 h-6 text-gray-600 dark:text-dark-300 cursor-pointer hover:text-gray-900 dark:hover:text-dark-100 transition-colors duration-200" />
             <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
               3
-            </div>
+            </div> */}
           </div>
           
           {/* User Profile */}
