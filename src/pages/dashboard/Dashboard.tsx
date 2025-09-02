@@ -19,6 +19,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useDashboardStore } from '../../store/dashboardStore';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { ErrorAlert } from '../../components/ui/error-alert';
+import { availableCurrencies, currencyNames } from '../../constants/currencies';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -135,10 +136,11 @@ const Dashboard: React.FC = () => {
             onChange={(e) => setCurrency(e.target.value)}
             className="px-3 sm:px-4 py-2 border border-gray-300 dark:border-dark-700 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-dark-800 text-gray-900 dark:text-dark-100 transition-colors duration-200 text-sm"
           >
-            <option value="USD">USD</option>
-            <option value="NGN">NGN</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
+            {availableCurrencies.map((currency) => (
+              <option key={currency} value={currency}>
+                {currency} - {currencyNames[currency]}
+              </option>
+            ))}
           </select>
         </div>
       </div>
