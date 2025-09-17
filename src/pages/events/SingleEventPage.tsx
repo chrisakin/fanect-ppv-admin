@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3, Save } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 import { useEventTransactionStore } from '../../store/eventTransactionStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
@@ -24,6 +24,7 @@ const SingleEventPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback' | 'locations' | 'metrics'>('details');
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [isTogglingSaveStream, setIsTogglingSaveStream] = useState(false);
   
   // Event Transaction store
   const {
@@ -216,6 +217,31 @@ const SingleEventPage: React.FC = () => {
       closeConfirmationModal();
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Handle toggle save stream
+  const handleToggleSaveStream = async () => {
+    if (!event) return;
+
+    try {
+      setIsTogglingSaveStream(true);
+      const response = await eventService.toggleSaveStream(event._id, !event.canWatchSavedStream);
+      
+      // Update the event state
+      setEvent(prev => prev ? { ...prev, canWatchSavedStream: !prev.canWatchSavedStream } : null);
+      
+      // Show success alert
+      setSuccessAlert({
+        isOpen: true,
+        message: response.message || `Stream saving ${!event.canWatchSavedStream ? 'enabled' : 'disabled'} successfully!`
+      });
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to toggle stream saving');
+      console.error('Error toggling stream saving:', err);
+    } finally {
+      setIsTogglingSaveStream(false);
     }
   };
 
@@ -489,6 +515,29 @@ const SingleEventPage: React.FC = () => {
                   >
                     <Edit3 className="w-4 h-4" />
                     <span>Edit Event</span>
+                  </button>
+                  <button
+                    onClick={handleToggleSaveStream}
+                    disabled={isTogglingSaveStream}
+                    className={`px-3 lg:px-4 py-2 rounded-lg transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      event.canWatchSavedStream
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                    }`}
+                  >
+                    {isTogglingSaveStream ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>
+                      {isTogglingSaveStream 
+                        ? 'Updating...' 
+                        : event.canWatchSavedStream 
+                          ? 'Stream Saving: ON' 
+                          : 'Stream Saving: OFF'
+                      }
+                    </span>
                   </button>
                   {event.adminStatus === 'Pending' && (
                     <>

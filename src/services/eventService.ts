@@ -261,6 +261,14 @@ export const eventService = {
     return response.data;
   },
 
+  // Toggle save stream setting
+  toggleSaveStream: async (id: string, canWatchSavedStream: boolean): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/events/toggle-save-stream/${id}`, {
+      canWatchSavedStream
+    });
+    return response.data;
+  },
+
   // Update event session (start/end stream)
   updateEventSession: async (id: string, session: 'stream-start' | 'stream-end'): Promise<{ message: string }> => {
     const response = await api.put(`/admin/events/update-event-session/${id}`, {
