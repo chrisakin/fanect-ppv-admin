@@ -285,8 +285,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                   <col className="w-[180px]" />
                   <col className="w-[120px]" />
                   <col className="w-[120px]" />
-                  <col className="w-[120px]" />
-                  <col className="w-[120px]" />
+                  <col className="w-[160px]" />
+                  <col className="w-[100px]" />
                   {showActions && <col className="w-[100px]" />}
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
