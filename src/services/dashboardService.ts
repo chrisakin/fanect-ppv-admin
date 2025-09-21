@@ -57,6 +57,17 @@ export interface TopEvent {
   viewCount: number;
 }
 
+export interface CurrentViewEvent {
+  _id: string;
+  name: string;
+  currentViews: number;
+}
+
+export interface CurrentViewCount {
+  topEvents: CurrentViewEvent[];
+  totalViews: number;
+}
+
 export interface ChartData {
   userGrowth: Array<{
     _id: string;
@@ -76,6 +87,7 @@ export interface DashboardAnalytics {
   eventStats: EventStats;
   revenueStats: RevenueStats;
   engagementStats: EngagementStats;
+  currentViewCount: CurrentViewCount;
   recentActivity: {
     recentEvents: RecentEvent[];
     recentUsers: RecentUser[];

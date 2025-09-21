@@ -206,14 +206,14 @@ const Dashboard: React.FC = () => {
             <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-600 dark:text-dark-300 truncate">Event Approval Rate</p>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100 mt-1">{analytics.eventStats.approvalRate}%</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-dark-300 truncate">Current View Count</p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-dark-100 mt-1">{analytics.currentViewCount.totalViews.toLocaleString()}</p>
                   <p className="text-xs lg:text-sm text-gray-500 dark:text-dark-400 mt-1 truncate">
-                    {analytics.eventStats.approved} approved
+                    Live viewers across all events
                   </p>
                 </div>
-                <div className="bg-primary-500 p-2 lg:p-3 rounded-lg flex-shrink-0 ml-3">
-                  <CheckCircle className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                <div className="bg-orange-500 p-2 lg:p-3 rounded-lg flex-shrink-0 ml-3">
+                  <Eye className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
               </div>
             </div>
@@ -363,6 +363,21 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-dark-300">Event Approval Rate</p>
+                  <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.eventStats.approvalRate}%</p>
+                  <p className="text-sm text-gray-500 dark:text-dark-400">
+                    {analytics.eventStats.approved} approved
+                  </p>
+                </div>
+                <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Recent Activity and Top Events */}
@@ -461,8 +476,55 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Top View Events and Top Performing Events */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+            {/* Top View Events */}
+            <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Top View For Live Events</h3>
+                <button
+                  onClick={() => navigate('/events')}
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 text-sm font-medium flex items-center space-x-1"
+                >
+                  <span>View all</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {analytics.currentViewCount.topEvents.slice(0, 5).map((event, index) => (
+                  <div key={event._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                        <span className="text-orange-600 dark:text-orange-400 font-bold text-sm">{index + 1}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-100">{event.name}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs text-red-600 dark:text-red-400 font-medium">Live</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                        {event.currentViews} viewer{event.currentViews !== 1 ? 's' : ''}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-dark-400">
+                        Currently watching
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {analytics.currentViewCount.topEvents.length === 0 && (
+                  <div className="text-center py-8 text-gray-500 dark:text-dark-400">
+                    <Eye className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm">No live events with viewers</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           {/* Top Events */}
-          {analytics.topEvents.length > 0 && (
             <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100">Top Performing Events</h3>
@@ -503,9 +565,15 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                 ))}
+                {analytics.topEvents.length === 0 && (
+                  <div className="text-center py-8 text-gray-500 dark:text-dark-400">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm">No top performing events</p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Key Insights */}
           <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4 lg:p-6 transition-colors duration-200">
@@ -525,10 +593,10 @@ const Dashboard: React.FC = () => {
                 </p>
               </div>
               
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border-l-4 border-purple-500">
-                <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Event Quality</h4>
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border-l-4 border-orange-500">
+                <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">Live Engagement</h4>
                 <p className="text-sm text-purple-800 dark:text-purple-200">
-                  {analytics.eventStats.approvalRate}% event approval rate with {analytics.eventStats.live} currently live. Average rating of {analytics.engagementStats.averageRating}/5 from {analytics.engagementStats.feedbacks} feedback{analytics.engagementStats.feedbacks !== 1 ? 's' : ''}.
+                  {analytics.currentViewCount.totalViews} viewer{analytics.currentViewCount.totalViews !== 1 ? 's' : ''} currently watching across {analytics.eventStats.live} live event{analytics.eventStats.live !== 1 ? 's' : ''}. {analytics.eventStats.approvalRate}% event approval rate with average rating of {analytics.engagementStats.averageRating}/5.
                 </p>
               </div>
             </div>
