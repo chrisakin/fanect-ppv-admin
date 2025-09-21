@@ -284,7 +284,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                   <col className="w-[320px]" />
                   <col className="w-[180px]" />
                   <col className="w-[120px]" />
-                  <col className="w-[160px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[120px]" />
                   <col className="w-[120px]" />
                   {showActions && <col className="w-[100px]" />}
                 </colgroup>
@@ -295,6 +296,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Schedule
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      Created At
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Status
@@ -338,6 +342,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                       <td className="px-4 lg:px-6 py-4 text-sm text-gray-900 dark:text-dark-100">
                         <div className="truncate">
                           {new Date(event.date).toLocaleDateString()} at {event.time}
+                        </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 text-sm text-gray-900 dark:text-dark-100">
+                        <div className="truncate">
+                          {new Date(event.createdAt).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4">

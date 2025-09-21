@@ -16,6 +16,10 @@ interface ActivityState {
   // Filters
   filters: ActivityFilters;
   
+  // Sorting
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+  
   // Actions
   setActivities: (activities: UserActivity[]) => void;
   setLoading: (loading: boolean) => void;
@@ -23,6 +27,7 @@ interface ActivityState {
   setPagination: (pagination: { currentPage: number; totalPages: number; totalDocs: number }) => void;
   setFilters: (filters: Partial<ActivityFilters>) => void;
   setCurrentPage: (page: number) => void;
+  setSorting: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   
   // API Actions
   fetchUserActivities: (userId: string, page?: number, searchTerm?: string) => Promise<void>;
@@ -47,6 +52,8 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
   totalDocs: 0,
   limit: 10,
   filters: initialFilters,
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
 
   setActivities: (activities) => set({ activities }),
   setLoading: (loading) => set({ loading }),
@@ -56,6 +63,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     filters: { ...state.filters, ...newFilters } 
   })),
   setCurrentPage: (currentPage) => set({ currentPage }),
+  setSorting: (sortBy, sortOrder) => set({ sortBy, sortOrder }),
   clearError: () => set({ error: null }),
   resetStore: () => set({
     activities: [],
@@ -64,11 +72,13 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     currentPage: 1,
     totalPages: 1,
     totalDocs: 0,
-    filters: initialFilters
+    filters: initialFilters,
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
   }),
 
   fetchUserActivities: async (userId: string, page = 1, searchTerm = '') => {
-    const { filters, limit } = get();
+    const { filters, limit, sortBy, sortOrder } = get();
     
     try {
       set({ loading: true, error: null });
@@ -80,7 +90,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
         endDate: filters.endDate
       };
       
-      const response = await activityService.getUserActivities(userId, page, limit, apiFilters);
+      const response = await activityService.getUserActivities(userId, page, limit, apiFilters, sortBy, sortOrder);
       
       set({
         activities: response.docs,
@@ -97,7 +107,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
   },
 
   fetchAdminActivities: async (adminId: string, page = 1, searchTerm = '') => {
-    const { filters, limit } = get();
+    const { filters, limit, sortBy, sortOrder } = get();
     
     try {
       set({ loading: true, error: null });
@@ -109,7 +119,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
         endDate: filters.endDate
       };
       
-      const response = await activityService.getAdminActivities(adminId, page, limit, apiFilters);
+      const response = await activityService.getAdminActivities(adminId, page, limit, apiFilters, sortBy, sortOrder);
       
       set({
         activities: response.docs,

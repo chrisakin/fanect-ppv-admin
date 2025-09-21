@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3, Save } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3, Save, DollarSign } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 import { useEventTransactionStore } from '../../store/eventTransactionStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
@@ -9,6 +9,7 @@ import { TransactionTable } from '../../components/transactions/TransactionTable
 import { FeedbackTable } from '../../components/feedback/FeedbackTable';
 import { LocationsTab } from '../../components/locations/LocationsTab';
 import { EventMetricsTab } from '../../components/events/EventMetricsTab';
+import { RevenueReportTab } from '../../components/events/RevenueReportTab';
 import { DescriptionModal } from '../../components/ui/description-modal';
 import { ConfirmationModal } from '../../components/ui/confirmation-modal';
 import { SuccessAlert } from '../../components/ui/success-alert';
@@ -22,7 +23,7 @@ const SingleEventPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback' | 'locations' | 'metrics'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback' | 'locations' | 'metrics' | 'revenue'>('details');
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [isTogglingSaveStream, setIsTogglingSaveStream] = useState(false);
   
@@ -714,7 +715,20 @@ const SingleEventPage: React.FC = () => {
                 <BarChart3 className="w-4 h-4" />
                 <span>Event Metrics</span>
               </div>
-            </button> 
+            </button>
+            <button
+              onClick={() => setActiveTab('revenue')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                activeTab === 'revenue'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-300 hover:border-gray-300 dark:hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-4 h-4" />
+                <span>Revenue Report</span>
+              </div>
+            </button>
           </nav>
         </div>
         {/* Tab Content */}
@@ -1026,6 +1040,10 @@ const SingleEventPage: React.FC = () => {
 
           {activeTab === 'metrics' && (
             <EventMetricsTab eventId={event._id} />
+          )}
+
+          {activeTab === 'revenue' && (
+            <RevenueReportTab eventId={event._id} />
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Filter } from 'lucide-react';
+import { Activity, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { UserActivity, ActivityFilters } from '../../types/activity';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
@@ -23,6 +23,10 @@ interface ActivityTableProps {
   onClearFilters?: () => void;
   showFilters?: boolean;
   userType: string;
+  // Sorting props
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 export const ActivityTable: React.FC<ActivityTableProps> = ({
@@ -40,7 +44,10 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
   onFilterChange,
   onClearFilters,
   showFilters = false,
-  userType
+  userType,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  onSortChange
 }) => {
   const getComponentColor = (component: string) => {
     switch (component) {
@@ -86,6 +93,27 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
     }
   };
 
+  const handleSort = (field: string) => {
+    if (!onSortChange) return;
+    
+    if (sortBy === field) {
+      // Toggle sort order if same field
+      onSortChange(field, sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to desc for new field
+      onSortChange(field, 'desc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (!onSortChange || sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-4 h-4 text-primary-600" />
+      : <ArrowDown className="w-4 h-4 text-primary-600" />;
+  };
   // Filter configuration
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
@@ -190,7 +218,14 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
                       User
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Date & Time
+                      <button
+                        onClick={() => handleSort('createdAt')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Date & Time</span>
+                        {getSortIcon('createdAt')}
+                      </button>
                     </th>
                   </tr>
                 </thead>

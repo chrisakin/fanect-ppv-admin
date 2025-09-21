@@ -35,8 +35,11 @@ const SingleOrganiserPage: React.FC = () => {
     totalDocs: activitiesTotalDocs,
     limit: activitiesLimit,
     filters: activityFilters,
+    sortBy: activitySortBy,
+    sortOrder: activitySortOrder,
     setFilters: setActivityFilters,
     setCurrentPage: setActivityCurrentPage,
+    setSorting: setActivitySorting,
     fetchUserActivities,
     clearError: clearActivityError,
     resetStore: resetActivityStore
@@ -115,7 +118,7 @@ const SingleOrganiserPage: React.FC = () => {
     if (activeTab === 'activities' && id) {
       fetchUserActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
     }
-  }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate]);
+  }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate, activitySortBy, activitySortOrder]);
 
   // Handle activity search with debounce
   useEffect(() => {
@@ -249,6 +252,14 @@ const SingleOrganiserPage: React.FC = () => {
       startDate: '',
       endDate: ''
     });
+    if (activitiesCurrentPage !== 1) {
+      setActivityCurrentPage(1);
+    }
+  };
+
+  // Handle activity sorting
+  const handleActivitySortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    setActivitySorting(sortBy, sortOrder);
     if (activitiesCurrentPage !== 1) {
       setActivityCurrentPage(1);
     }
@@ -638,6 +649,9 @@ const SingleOrganiserPage: React.FC = () => {
                 onClearFilters={clearActivityFilters}
                 showFilters={true}
                 userType="organiser"
+                sortBy={activitySortBy}
+                sortOrder={activitySortOrder}
+                onSortChange={handleActivitySortChange}
               />
             </div>
           )}

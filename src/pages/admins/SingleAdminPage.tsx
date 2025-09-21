@@ -31,8 +31,11 @@ const SingleAdminPage: React.FC = () => {
     totalDocs: activitiesTotalDocs,
     limit: activitiesLimit,
     filters: activityFilters,
+    sortBy: activitySortBy,
+    sortOrder: activitySortOrder,
     setFilters: setActivityFilters,
     setCurrentPage: setActivityCurrentPage,
+    setSorting: setActivitySorting,
     fetchAdminActivities,
     clearError: clearActivityError,
     resetStore: resetActivityStore
@@ -93,7 +96,7 @@ const SingleAdminPage: React.FC = () => {
     if (activeTab === 'activities' && id) {
       fetchAdminActivities(id, activitiesCurrentPage, activityFilters.searchTerm);
     }
-  }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate]);
+  }, [activeTab, id, activitiesCurrentPage, activityFilters.component, activityFilters.startDate, activityFilters.endDate, activitySortBy, activitySortOrder]);
 
   // Handle activity search with debounce
   useEffect(() => {
@@ -205,6 +208,14 @@ const SingleAdminPage: React.FC = () => {
       startDate: '',
       endDate: ''
     });
+    if (activitiesCurrentPage !== 1) {
+      setActivityCurrentPage(1);
+    }
+  };
+
+  // Handle activity sorting
+  const handleActivitySortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    setActivitySorting(sortBy, sortOrder);
     if (activitiesCurrentPage !== 1) {
       setActivityCurrentPage(1);
     }
@@ -480,6 +491,9 @@ const SingleAdminPage: React.FC = () => {
                 onClearFilters={clearActivityFilters}
                 showFilters={true}
                 userType="admin"
+                sortBy={activitySortBy}
+                sortOrder={activitySortOrder}
+                onSortChange={handleActivitySortChange}
               />
             </div>
           )}

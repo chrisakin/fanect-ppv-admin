@@ -7,7 +7,9 @@ export const activityService = {
     userId: string,
     page: number = 1,
     limit: number = 10,
-    filters?: Partial<ActivityFilters>
+    filters?: Partial<ActivityFilters>,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
   ): Promise<UserActivitiesResponse> => {
     let url = `/admin/users/single-user-activities/${userId}?page=${page}&limit=${limit}`;
     
@@ -26,6 +28,13 @@ export const activityService = {
       }
     }
     
+    if (sortBy) {
+      url += `&sortBy=${sortBy}`;
+    }
+    if (sortOrder) {
+      url += `&sortOrder=${sortOrder}`;
+    }
+    
     const response = await api.get(url);
     return response.data;
   },
@@ -35,7 +44,9 @@ export const activityService = {
     adminId: string,
     page: number = 1,
     limit: number = 10,
-    filters?: Partial<ActivityFilters>
+    filters?: Partial<ActivityFilters>,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
   ): Promise<UserActivitiesResponse> => {
     let url = `/admin/auth/admin-activites/${adminId}?page=${page}&limit=${limit}`;
     
@@ -52,6 +63,13 @@ export const activityService = {
       if (filters.endDate) {
         url += `&endDate=${filters.endDate}`;
       }
+    }
+    
+    if (sortBy) {
+      url += `&sortBy=${sortBy}`;
+    }
+    if (sortOrder) {
+      url += `&sortOrder=${sortOrder}`;
     }
     
     const response = await api.get(url);

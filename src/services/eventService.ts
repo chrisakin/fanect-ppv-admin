@@ -281,5 +281,11 @@ export const eventService = {
       session
     });
     return response.data;
+  },
+
+  // Get event revenue report
+  getEventRevenueReport: async (id: string): Promise<{ message: string; data: Array<{ currency: string; totalRevenue: number; totalStreampass: number }> }> => {
+    const response = await api.get(`/admin/events/revenue-report/${id}`);
+    return response.data;
   }
 };
