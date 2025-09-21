@@ -261,6 +261,12 @@ export const eventService = {
     return response.data;
   },
 
+  // Publish an unpublished event
+  publishUnpublishedEvent: async (id: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/events/publish-unpublished-event/${id}`);
+    return response.data;
+  },
+
   // Toggle save stream setting
   toggleSaveStream: async (id: string, canWatchSavedStream: boolean): Promise<{ message: string }> => {
     const response = await api.put(`/admin/events/toggle-save-stream/${id}`, {

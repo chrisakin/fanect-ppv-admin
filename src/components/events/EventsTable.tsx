@@ -33,6 +33,7 @@ interface EventsTableProps {
   onApproveEvent?: (eventId: string) => void;
   onRejectEvent?: (eventId: string) => void;
   onUnpublishEvent?: (eventId: string) => void;
+  onPublishEvent?: (eventId: string) => void;
   onStreamAction?: (eventId: string, action: 'stream-start' | 'stream-end') => void;
   actionLoading?: string | null;
   openDropdown?: string | null;
@@ -62,6 +63,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   onApproveEvent,
   onRejectEvent,
   onUnpublishEvent,
+  onPublishEvent,
   onStreamAction,
   actionLoading,
   openDropdown,
@@ -163,13 +165,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           className: 'text-blue-700 dark:text-blue-400'
         });
       }
-      if (onUnpublishEvent) {
+      if (event.published && onUnpublishEvent) {
         items.push({
           icon: Clock,
           label: 'Unpublish Event',
           onClick: () => onUnpublishEvent(event._id),
           disabled: actionLoading === event._id,
           className: 'text-yellow-700 dark:text-yellow-400'
+        });
+      }
+      if (!event.published && onPublishEvent) {
+        items.push({
+          icon: CheckCircle,
+          label: 'Publish Event',
+          onClick: () => onPublishEvent(event._id),
+          disabled: actionLoading === event._id,
+          className: 'text-green-700 dark:text-green-400'
         });
       }
     }

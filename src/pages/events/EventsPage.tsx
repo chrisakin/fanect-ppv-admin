@@ -19,7 +19,7 @@ const EventsPage: React.FC = () => {
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    type: 'approve' | 'reject' | 'unpublish' | null;
+    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | null;
     eventId: string | null;
   }>({
     isOpen: false,
@@ -97,7 +97,7 @@ const EventsPage: React.FC = () => {
   }, [filters.searchTerm]);
 
   // Open confirmation modal
-  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish', eventId: string) => {
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish', eventId: string) => {
     setModalState({
       isOpen: true,
       type,
@@ -133,6 +133,13 @@ const EventsPage: React.FC = () => {
         case 'unpublish':
           response = await eventService.unpublishEvent(modalState.eventId);
           break;
+        case 'publish':
+          response = await eventService.publishUnpublishedEvent(modalState.eventId);
+          break;
+        case 'stream-start':
+        case 'stream-end':
+          response = await eventService.updateEventSession(modalState.eventId, modalState.type);
+          break;
       }
       
       // Update the selected event if it's currently being viewed
@@ -164,27 +171,13 @@ const EventsPage: React.FC = () => {
 
   // Handle stream start/end actions
   const handleStreamAction = async (eventId: string, session: 'stream-start' | 'stream-end') => {
-    try {
-      setActionLoading(eventId);
-      const response = await eventService.updateEventSession(eventId, session);
-      
-      // Refresh events list
-      await fetchEvents(currentPage, filters.searchTerm);
-      
-      // Show success alert
-      setSuccessAlert({
-        isOpen: true,
-        message: response.message || `Stream ${session === 'stream-start' ? 'started' : 'ended'} successfully!`
-      });
-      
-      setOpenDropdown(null);
-      
-    } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${session === 'stream-start' ? 'start' : 'end'} stream`);
-      console.error(`Error ${session === 'stream-start' ? 'starting' : 'ending'} stream:`, err);
-    } finally {
-      setActionLoading(null);
-    }
+    // Open confirmation modal for stream actions
+    setModalState({
+      isOpen: true,
+      type: session,
+      eventId
+    });
+    setOpenDropdown(null);
   };
   // Handle view event
   const handleViewEvent = (eventId: string) => {
@@ -223,6 +216,30 @@ const EventsPage: React.FC = () => {
           message: 'Are you sure you want to unpublish this event? This will hide it from users.',
           confirmText: 'Unpublish Event',
           confirmColor: 'bg-yellow-600 hover:bg-yellow-700',
+          showReasonInput: false
+        };
+      case 'publish':
+        return {
+          title: 'Publish Event',
+          message: 'Are you sure you want to publish this event? This will make it visible to users again.',
+          confirmText: 'Publish Event',
+          confirmColor: 'bg-green-600 hover:bg-green-700',
+          showReasonInput: false
+        };
+      case 'stream-start':
+        return {
+          title: 'Start Streaming',
+          message: 'Are you sure you want to start streaming for this event?',
+          confirmText: 'Start Streaming',
+          confirmColor: 'bg-blue-600 hover:bg-blue-700',
+          showReasonInput: false
+        };
+      case 'stream-end':
+        return {
+          title: 'Stop Streaming',
+          message: 'Are you sure you want to stop streaming for this event?',
+          confirmText: 'Stop Streaming',
+          confirmColor: 'bg-red-600 hover:bg-red-700',
           showReasonInput: false
         };
       default:
@@ -316,6 +333,7 @@ const EventsPage: React.FC = () => {
         onApproveEvent={(eventId) => openConfirmationModal('approve', eventId)}
         onRejectEvent={(eventId) => openConfirmationModal('reject', eventId)}
         onUnpublishEvent={(eventId) => openConfirmationModal('unpublish', eventId)}
+        onPublishEvent={(eventId) => openConfirmationModal('publish', eventId)}
         onStreamAction={handleStreamAction}
         actionLoading={actionLoading}
         openDropdown={openDropdown}

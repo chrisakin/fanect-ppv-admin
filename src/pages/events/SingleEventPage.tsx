@@ -63,7 +63,7 @@ const SingleEventPage: React.FC = () => {
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end' | null;
+    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | null;
     eventId: string | null;
   }>({
     isOpen: false,
@@ -155,7 +155,7 @@ const SingleEventPage: React.FC = () => {
   }, [activeTab, eventFeedbackFilters.searchTerm, eventFeedbacksCurrentPage, fetchEventFeedbacks, id, setEventFeedbackCurrentPage]);
 
   // Open confirmation modal
-  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'stream-start' | 'stream-end', eventId: string) => {
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end', eventId: string) => {
     setModalState({
       isOpen: true,
       type,
@@ -189,6 +189,9 @@ const SingleEventPage: React.FC = () => {
           break;
         case 'unpublish':
           response = await eventService.unpublishEvent(modalState.eventId);
+          break;
+        case 'publish':
+          response = await eventService.publishUnpublishedEvent(modalState.eventId);
           break;
         case 'stream-start':
         case 'stream-end':
@@ -423,6 +426,14 @@ const SingleEventPage: React.FC = () => {
           confirmColor: 'bg-yellow-600 hover:bg-yellow-700',
           showReasonInput: false
         };
+      case 'publish':
+        return {
+          title: 'Publish Event',
+          message: 'Are you sure you want to publish this event? This will make it visible to users again.',
+          confirmText: 'Publish Event',
+          confirmColor: 'bg-green-600 hover:bg-green-700',
+          showReasonInput: false
+        };
       case 'stream-start':
         return {
           title: 'Start Streaming',
@@ -561,21 +572,31 @@ const SingleEventPage: React.FC = () => {
                     <>
                       {event.status !== 'Past' && (
                         <button
-                        onClick={() => openConfirmationModal(event.status == 'Live' ? 'stream-end' : 'stream-start', event._id)}
+                        onClick={() => openConfirmationModal(event.status === 'Live' ? 'stream-end' : 'stream-start', event._id)}
                         disabled={actionLoading === event._id}
                         className="px-3 lg:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap flex items-center space-x-2"
                       >
                         <Activity className="w-4 h-4" />
-                        <span>{actionLoading === event._id ? 'Processing...' : (event.status == 'Live' ? 'End Stream' : 'Start Stream')}</span>
+                        <span>{actionLoading === event._id ? 'Processing...' : (event.status === 'Live' ? 'End Stream' : 'Start Stream')}</span>
                       </button>
                       )}
-                      <button
-                        onClick={() => openConfirmationModal('unpublish', event._id)}
-                        disabled={actionLoading === event._id}
-                        className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {actionLoading === event._id ? 'Processing...' : 'Unpublish'}
-                      </button>
+                      {event.published ? (
+                        <button
+                          onClick={() => openConfirmationModal('unpublish', event._id)}
+                          disabled={actionLoading === event._id}
+                          className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === event._id ? 'Processing...' : 'Unpublish Event'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => openConfirmationModal('publish', event._id)}
+                          disabled={actionLoading === event._id}
+                          className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === event._id ? 'Processing...' : 'Publish Event'}
+                        </button>
+                      )}
                     </>
                   )}
                   {event.adminStatus === 'Rejected' && (
@@ -584,7 +605,7 @@ const SingleEventPage: React.FC = () => {
                       disabled={actionLoading === event._id}
                       className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                     >
-                      {actionLoading === event._id ? 'Processing...' : 'Approve'}
+                      {actionLoading === event._id ? 'Processing...' : 'Approve Event'}
                     </button>
                   )}
                 </div>
