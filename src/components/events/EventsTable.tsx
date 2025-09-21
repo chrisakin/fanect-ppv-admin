@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Filter, Eye, Edit3, CheckCircle, Clock, AlertCircle, Activity } from 'lucide-react';
+import { Calendar, Filter, Eye, Edit3, CheckCircle, Clock, AlertCircle, Activity, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { ApiEvent } from '../../services/eventService';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
@@ -43,6 +43,10 @@ interface EventsTableProps {
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
   showFilters?: boolean;
+  // Sorting props
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 export const EventsTable: React.FC<EventsTableProps> = ({
@@ -71,7 +75,10 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   filters,
   onFilterChange,
   onClearFilters,
-  showFilters = false
+  showFilters = false,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  onSortChange
 }) => {
   const getStatusIcon = (adminStatus: string) => {
     switch (adminStatus) {
@@ -198,6 +205,28 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     return items;
   };
 
+  const handleSort = (field: string) => {
+    if (!onSortChange) return;
+    
+    if (sortBy === field) {
+      // Toggle sort order if same field
+      onSortChange(field, sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to desc for new field
+      onSortChange(field, 'desc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (!onSortChange || sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-4 h-4 text-primary-600" />
+      : <ArrowDown className="w-4 h-4 text-primary-600" />;
+  };
+
   // Filter configuration
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
@@ -295,10 +324,24 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                       Event
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Schedule
+                      <button
+                        onClick={() => handleSort('date')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Schedule</span>
+                        {getSortIcon('date')}
+                      </button>
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Created At
+                      <button
+                        onClick={() => handleSort('createdAt')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Created At</span>
+                        {getSortIcon('createdAt')}
+                      </button>
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Status

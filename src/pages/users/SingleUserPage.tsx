@@ -42,6 +42,10 @@ const SingleUserPage: React.FC = () => {
     resetStore: resetTransactionStore
   } = useTransactionStore();
   
+  // Sorting state for transactions
+  const [transactionSortBy, setTransactionSortBy] = useState('createdAt');
+  const [transactionSortOrder, setTransactionSortOrder] = useState<'asc' | 'desc'>('desc');
+  
   // Activity store
   const {
     activities,
@@ -136,16 +140,16 @@ const SingleUserPage: React.FC = () => {
   // Fetch transactions when transactions tab is active
   useEffect(() => {
     if (activeTab === 'transactions' && id) {
-      fetchUserTransactions(id, transactionsCurrentPage, transactionFilters.searchTerm);
+      fetchUserTransactions(id, transactionsCurrentPage, transactionFilters.searchTerm, transactionSortBy, transactionSortOrder);
     }
-  }, [activeTab, id, transactionsCurrentPage, transactionFilters.status, transactionFilters.giftStatus, transactionFilters.paymentMethod, transactionFilters.startDate, transactionFilters.endDate]);
+  }, [activeTab, id, transactionsCurrentPage, transactionFilters.status, transactionFilters.giftStatus, transactionFilters.paymentMethod, transactionFilters.startDate, transactionFilters.endDate, transactionSortBy, transactionSortOrder]);
 
   // Handle transaction search with debounce
   useEffect(() => {
     if (activeTab === 'transactions' && id) {
       const timeoutId = setTimeout(() => {
         if (transactionsCurrentPage === 1) {
-          fetchUserTransactions(id, 1, transactionFilters.searchTerm);
+          fetchUserTransactions(id, 1, transactionFilters.searchTerm, transactionSortBy, transactionSortOrder);
         } else {
           setTransactionCurrentPage(1);
         }
@@ -153,7 +157,7 @@ const SingleUserPage: React.FC = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [transactionFilters.searchTerm]);
+  }, [transactionFilters.searchTerm, transactionSortBy, transactionSortOrder]);
 
   // Fetch activities when activities tab is active
   useEffect(() => {
@@ -296,6 +300,15 @@ const SingleUserPage: React.FC = () => {
       startDate: '',
       endDate: ''
     });
+    if (transactionsCurrentPage !== 1) {
+      setTransactionCurrentPage(1);
+    }
+  };
+
+  // Handle transaction sorting
+  const handleTransactionSortChange = (field: string, order: 'asc' | 'desc') => {
+    setTransactionSortBy(field);
+    setTransactionSortOrder(order);
     if (transactionsCurrentPage !== 1) {
       setTransactionCurrentPage(1);
     }
@@ -691,6 +704,9 @@ const SingleUserPage: React.FC = () => {
                 onFilterChange={handleTransactionFilterChange}
                 onClearFilters={clearTransactionFilters}
                 showFilters={true}
+                sortBy={transactionSortBy}
+                sortOrder={transactionSortOrder}
+                onSortChange={handleTransactionSortChange}
               />
             </div>
           )}

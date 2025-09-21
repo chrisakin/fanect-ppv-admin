@@ -33,7 +33,7 @@ interface AllTransactionState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchAllTransactions: (page?: number, searchTerm?: string) => Promise<void>;
+  fetchAllTransactions: (page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   fetchTransactionStats: () => Promise<void>;
   clearError: () => void;
 }
@@ -72,7 +72,7 @@ export const useAllTransactionStore = create<AllTransactionState>((set, get) => 
   setCurrentPage: (currentPage) => set({ currentPage }),
   clearError: () => set({ error: null }),
 
-  fetchAllTransactions: async (page = 1, searchTerm = '') => {
+  fetchAllTransactions: async (page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -85,7 +85,9 @@ export const useAllTransactionStore = create<AllTransactionState>((set, get) => 
         searchTerm: searchTerm.trim(),
         startDate: filters.startDate,
         endDate: filters.endDate,
-        currency: filters.currency.length > 0 ? filters.currency.join(',') : undefined
+        currency: filters.currency.length > 0 ? filters.currency.join(',') : undefined,
+        sortBy,
+        sortOrder
       };
       
       const response = await transactionService.getAllTransactions(page, limit, apiFilters);

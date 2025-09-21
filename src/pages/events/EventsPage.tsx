@@ -50,9 +50,13 @@ const EventsPage: React.FC = () => {
     startDate: '',
     endDate: ''
   });
+  
+  // Sorting state
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Fetch events with search and filters
-  const fetchEvents = async (page: number = 1, searchTerm: string = '') => {
+  const fetchEvents = async (page: number = 1, searchTerm: string = '', sortField?: string, sortDirection?: 'asc' | 'desc') => {
     try {
       setLoading(true);
       setError(null);
@@ -62,7 +66,9 @@ const EventsPage: React.FC = () => {
         endDate: filters.endDate || '',
         status: filters.status,
         adminStatus: filters.adminStatus,
-        searchTerm: searchTerm.trim()
+        searchTerm: searchTerm.trim(),
+        sortBy: sortField || sortBy,
+        sortOrder: sortDirection || sortOrder
       };
       
       const response = await eventService.getAllEvents(page, limit, apiFilters);
@@ -80,21 +86,21 @@ const EventsPage: React.FC = () => {
 
   // Load events on component mount, page change, or filter change
   useEffect(() => {
-    fetchEvents(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status, filters.adminStatus, filters.startDate, filters.endDate]);
+    fetchEvents(currentPage, filters.searchTerm, sortBy, sortOrder);
+  }, [currentPage, filters.status, filters.adminStatus, filters.startDate, filters.endDate, sortBy, sortOrder]);
 
   // Handle search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
-        fetchEvents(1, filters.searchTerm);
+        fetchEvents(1, filters.searchTerm, sortBy, sortOrder);
       } else {
         setCurrentPage(1);
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [filters.searchTerm]);
+  }, [filters.searchTerm, sortBy, sortOrder]);
 
   // Open confirmation modal
   const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish', eventId: string) => {
@@ -149,7 +155,7 @@ const EventsPage: React.FC = () => {
       }
       
       // Refresh events list
-      await fetchEvents(currentPage, filters.searchTerm);
+      await fetchEvents(currentPage, filters.searchTerm, sortBy, sortOrder);
       
       // Show success alert
       setSuccessAlert({
@@ -189,6 +195,15 @@ const EventsPage: React.FC = () => {
   const handleEditEvent = (eventId: string) => {
     setOpenDropdown(null);
     navigate(`/events/edit/${eventId}`);
+  };
+
+  // Handle sorting
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortBy(field);
+    setSortOrder(order);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
   // Get modal configuration based on action type
@@ -342,6 +357,9 @@ const EventsPage: React.FC = () => {
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         showFilters={true}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
 
       {/* Confirmation Modal */}
@@ -364,4 +382,3 @@ const EventsPage: React.FC = () => {
 };
 
 export default EventsPage;
-

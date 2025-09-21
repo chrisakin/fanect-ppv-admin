@@ -29,7 +29,7 @@ interface EventTransactionState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchEventTransactions: (eventId: string, page?: number, searchTerm?: string) => Promise<void>;
+  fetchEventTransactions: (eventId: string, page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
 }
@@ -73,7 +73,7 @@ export const useEventTransactionStore = create<EventTransactionState>((set, get)
     filters: initialFilters
   }),
 
-  fetchEventTransactions: async (eventId: string, page = 1, searchTerm = '') => {
+  fetchEventTransactions: async (eventId: string, page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -86,7 +86,9 @@ export const useEventTransactionStore = create<EventTransactionState>((set, get)
         searchTerm: searchTerm.trim(),
         startDate: filters.startDate,
         endDate: filters.endDate,
-        currency: filters.currency.length > 0 ? filters.currency.join(',') : undefined
+        currency: filters.currency.length > 0 ? filters.currency.join(',') : undefined,
+        sortBy,
+        sortOrder
       };
       
       const response = await transactionService.getEventTransactions(eventId, page, limit, apiFilters);

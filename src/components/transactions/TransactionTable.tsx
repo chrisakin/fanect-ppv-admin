@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, Filter, Gift } from 'lucide-react';
+import { CreditCard, Filter, Gift, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { UserTransaction, TransactionStatus, PaymentMethod, TransactionFilters } from '../../types/transaction';
 import { CurrencyFilterDropdown } from '../ui/currency-filter-dropdown';
 import { LoadingSpinner } from '../ui/loading-spinner';
@@ -28,6 +28,10 @@ interface TransactionTableProps {
   showCurrencyFilter?: boolean;
   selectedCurrencies?: string[];
   onCurrencyFilterChange?: (currencies: string[]) => void;
+  // Sorting props
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
@@ -48,7 +52,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   showFilters = false,
   showCurrencyFilter = false,
   selectedCurrencies = [],
-  onCurrencyFilterChange
+  onCurrencyFilterChange,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  onSortChange
 }) => {
   const getTransactionStatusColor = (status: TransactionStatus) => {
     switch (status) {
@@ -71,6 +78,28 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       maximumFractionDigits: 2,
     });
     return formatter.format(amount);
+  };
+
+  const handleSort = (field: string) => {
+    if (!onSortChange) return;
+    
+    if (sortBy === field) {
+      // Toggle sort order if same field
+      onSortChange(field, sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to desc for new field
+      onSortChange(field, 'desc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (!onSortChange || sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-4 h-4 text-primary-600" />
+      : <ArrowDown className="w-4 h-4 text-primary-600" />;
   };
 
   // Filter configuration
@@ -181,7 +210,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 <colgroup>
                   <col className="w-[250px]" />
                   {showUserColumn && <col className="w-[150px]" />}
-                  <col className="w-[120px]" />
+                  <col className="w-[140px]" />
                   <col className="w-[150px]" />
                   <col className="w-[120px]" />
                   <col className="w-[100px]" />
@@ -198,7 +227,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       </th>
                     )}
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Amount
+                      <button
+                        onClick={() => handleSort('amount')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Amount</span>
+                        {getSortIcon('amount')}
+                      </button>
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Payment Method
@@ -210,7 +246,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       Type
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Date
+                      <button
+                        onClick={() => handleSort('createdAt')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Date</span>
+                        {getSortIcon('createdAt')}
+                      </button>
                     </th>
                   </tr>
                 </thead>

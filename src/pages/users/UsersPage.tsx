@@ -28,6 +28,10 @@ const UsersPage: React.FC = () => {
     clearError
   } = useUserStore();
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     type: 'lock' | 'unlock' | null;
@@ -49,20 +53,20 @@ const UsersPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchUsers(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate]);
+    fetchUsers(currentPage, filters.searchTerm, sortBy, sortOrder);
+  }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate, sortBy, sortOrder]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
-        fetchUsers(1, filters.searchTerm);
+        fetchUsers(1, filters.searchTerm, sortBy, sortOrder);
       } else {
         setCurrentPage(1);
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [filters.searchTerm]);
+  }, [filters.searchTerm, sortBy, sortOrder]);
 
   const openConfirmationModal = (type: 'lock' | 'unlock', userId: string, userName: string) => {
     setModalState({
@@ -151,6 +155,15 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  // Handle sorting
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortBy(field);
+    setSortOrder(order);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
   const getModalConfig = () => {
     const { type, userName } = modalState;
     
@@ -203,6 +216,9 @@ const UsersPage: React.FC = () => {
         title="User Management"
         showUsername={true}
         showEventsJoined={true}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
 
       {/* Confirmation Modal */}

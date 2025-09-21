@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { RefreshCw, AlertTriangle, DollarSign, Loader2, CreditCard, Gift, TrendingUp } from 'lucide-react';
 import { TransactionTable } from '../../components/transactions/TransactionTable';
 import { useAllTransactionStore } from '../../store/allTransactionStore';
@@ -24,24 +24,36 @@ const PaymentsPage: React.FC = () => {
     clearError
   } = useAllTransactionStore();
 
+  const [successAlert, setSuccessAlert] = useState<{
+    isOpen: boolean;
+    message: string;
+  }>({
+    isOpen: false,
+    message: ''
+  });
+  
+  // Sorting state
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   // Load transactions and stats on component mount
   useEffect(() => {
-    fetchAllTransactions(currentPage, filters.searchTerm);
+    fetchAllTransactions(currentPage, filters.searchTerm, sortBy, sortOrder);
     fetchTransactionStats();
-  }, [currentPage, filters.status, filters.giftStatus, filters.paymentMethod, filters.startDate, filters.endDate, filters.currency]);
+  }, [currentPage, filters.status, filters.giftStatus, filters.paymentMethod, filters.startDate, filters.endDate, filters.currency, sortBy, sortOrder]);
 
   // Handle search with debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
-        fetchAllTransactions(1, filters.searchTerm);
+        fetchAllTransactions(1, filters.searchTerm, sortBy, sortOrder);
       } else {
         setCurrentPage(1);
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [filters.searchTerm]);
+  }, [filters.searchTerm, sortBy, sortOrder]);
 
   // Refresh stats when currency filter changes
   useEffect(() => {
@@ -110,6 +122,15 @@ const PaymentsPage: React.FC = () => {
       maximumFractionDigits: 2,
     });
     return formatter.format(amount);
+  };
+
+  // Handle sorting
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortBy(field);
+    setSortOrder(order);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
   // Convert filters to the format expected by TransactionTable  
@@ -353,6 +374,9 @@ const PaymentsPage: React.FC = () => {
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         showFilters={true}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
     </div>
   );

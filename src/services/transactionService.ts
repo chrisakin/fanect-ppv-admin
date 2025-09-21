@@ -38,6 +38,8 @@ export const transactionService = {
       searchTerm?: string;
       startDate?: string;
       endDate?: string;
+      sortBy?: string;
+      sortOrder?: string;
     }
   ): Promise<UserTransactionsResponse> => {
     let url = `/admin/users/single-user-transactions/${userId}?page=${page}&limit=${limit}`;
@@ -61,6 +63,12 @@ export const transactionService = {
       if (filters.endDate) {
         url += `&endDate=${filters.endDate}`;
       }
+      if (filters.sortBy) {
+        url += `&sortBy=${filters.sortBy}`;
+      }
+      if (filters.sortOrder) {
+        url += `&sortOrder=${filters.sortOrder}`;
+      }
     }
     
     const response = await api.get(url);
@@ -79,6 +87,8 @@ export const transactionService = {
       startDate?: string;
       endDate?: string;
       currency?: string; // Comma-separated currency codes
+      sortBy?: string;
+      sortOrder?: string;
     }
   ): Promise<AllTransactionsResponse> => {
     let url = `/admin/transactions/all-transactions?page=${page}&limit=${limit}`;
@@ -105,6 +115,12 @@ export const transactionService = {
       if (filters.currency && filters.currency.trim()) {
         url += `&currency=${encodeURIComponent(filters.currency)}`;
       }
+      if (filters.sortBy) {
+        url += `&sortBy=${filters.sortBy}`;
+      }
+      if (filters.sortOrder) {
+        url += `&sortOrder=${filters.sortOrder}`;
+      }
     }
     
     const response = await api.get(url);
@@ -124,6 +140,8 @@ export const transactionService = {
       startDate?: string;
       endDate?: string;
       currency?: string; // Comma-separated currency codes
+      sortBy?: string;
+      sortOrder?: string;
     }
   ): Promise<AllTransactionsResponse> => {
     let url = `/admin/events/single-event-transactions/${eventId}?page=${page}&limit=${limit}`;
@@ -149,6 +167,12 @@ export const transactionService = {
       }
       if (filters.currency && filters.currency.trim()) {
         url += `&currency=${encodeURIComponent(filters.currency)}`;
+      }
+      if (filters.sortBy) {
+        url += `&sortBy=${filters.sortBy}`;
+      }
+      if (filters.sortOrder) {
+        url += `&sortOrder=${filters.sortOrder}`;
       }
     }
     

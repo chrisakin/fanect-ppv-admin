@@ -34,7 +34,7 @@ interface OrganiserState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchOrganisers: (page?: number, searchTerm?: string) => Promise<void>;
+  fetchOrganisers: (page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   lockOrganiser: (organiserId: string) => Promise<{ success: boolean; message?: string }>;
   unlockOrganiser: (organiserId: string) => Promise<{ success: boolean; message?: string }>;
   clearError: () => void;
@@ -70,7 +70,7 @@ export const useOrganiserStore = create<OrganiserState>((set, get) => ({
   setCurrentPage: (currentPage) => set({ currentPage }),
   clearError: () => set({ error: null }),
 
-  fetchOrganisers: async (page = 1, searchTerm = '') => {
+  fetchOrganisers: async (page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -81,7 +81,9 @@ export const useOrganiserStore = create<OrganiserState>((set, get) => ({
         searchTerm: searchTerm.trim(),
         locked: filters.locked,
         startDate: filters.startDate,
-        endDate: filters.endDate
+        endDate: filters.endDate,
+        sortBy,
+        sortOrder
       };
       
       const response = await organiserService.getAllOrganisers(page, limit, apiFilters);
@@ -107,7 +109,7 @@ export const useOrganiserStore = create<OrganiserState>((set, get) => ({
       
       // Refresh organisers list
       const { currentPage, filters } = get();
-      await get().fetchOrganisers(currentPage, filters.searchTerm);
+      await get().fetchOrganisers(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'Organiser locked successfully!' };
     } catch (err: any) {
@@ -126,7 +128,7 @@ export const useOrganiserStore = create<OrganiserState>((set, get) => ({
       
       // Refresh organisers list
       const { currentPage, filters } = get();
-      await get().fetchOrganisers(currentPage, filters.searchTerm);
+      await get().fetchOrganisers(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'Organiser unlocked successfully!' };
     } catch (err: any) {

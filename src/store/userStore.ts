@@ -34,7 +34,7 @@ interface UserState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchUsers: (page?: number, searchTerm?: string) => Promise<void>;
+  fetchUsers: (page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   lockUser: (userId: string) => Promise<{ success: boolean; message?: string }>;
   unlockUser: (userId: string) => Promise<{ success: boolean; message?: string }>;
   clearError: () => void;
@@ -70,7 +70,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   setCurrentPage: (currentPage) => set({ currentPage }),
   clearError: () => set({ error: null }),
 
-  fetchUsers: async (page = 1, searchTerm = '') => {
+  fetchUsers: async (page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -81,7 +81,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         searchTerm: searchTerm.trim(),
         locked: filters.locked,
         startDate: filters.startDate,
-        endDate: filters.endDate
+        endDate: filters.endDate,
+        sortBy,
+        sortOrder
       };
       
       const response = await userService.getAllUsers(page, limit, apiFilters);
@@ -107,7 +109,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       
       // Refresh users list
       const { currentPage, filters } = get();
-      await get().fetchUsers(currentPage, filters.searchTerm);
+      await get().fetchUsers(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'User locked successfully!' };
     } catch (err: any) {
@@ -126,7 +128,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       
       // Refresh users list
       const { currentPage, filters } = get();
-      await get().fetchUsers(currentPage, filters.searchTerm);
+      await get().fetchUsers(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'User unlocked successfully!' };
     } catch (err: any) {

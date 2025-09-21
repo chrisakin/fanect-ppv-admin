@@ -34,7 +34,7 @@ interface AdminState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchAdmins: (page?: number, searchTerm?: string) => Promise<void>;
+  fetchAdmins: (page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   lockAdmin: (adminId: string) => Promise<{ success: boolean; message?: string }>;
   unlockAdmin: (adminId: string) => Promise<{ success: boolean; message?: string }>;
   clearError: () => void;
@@ -70,7 +70,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   setCurrentPage: (currentPage) => set({ currentPage }),
   clearError: () => set({ error: null }),
 
-  fetchAdmins: async (page = 1, searchTerm = '') => {
+  fetchAdmins: async (page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -81,7 +81,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         searchTerm: searchTerm.trim(),
         locked: filters.locked,
         startDate: filters.startDate,
-        endDate: filters.endDate
+        endDate: filters.endDate,
+        sortBy,
+        sortOrder
       };
       
       const response = await adminService.getAllAdmins(page, limit, apiFilters);
@@ -107,7 +109,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       // Refresh admins list
       const { currentPage, filters } = get();
-      await get().fetchAdmins(currentPage, filters.searchTerm);
+      await get().fetchAdmins(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'Admin locked successfully!' };
     } catch (err: any) {
@@ -126,7 +128,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       // Refresh admins list
       const { currentPage, filters } = get();
-      await get().fetchAdmins(currentPage, filters.searchTerm);
+      await get().fetchAdmins(currentPage, filters.searchTerm, 'createdAt', 'desc');
       
       return { success: true, message: response.message || 'Admin unlocked successfully!' };
     } catch (err: any) {

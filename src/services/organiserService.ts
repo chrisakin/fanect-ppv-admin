@@ -46,6 +46,8 @@ export const organiserService = {
       locked?: 'All' | 'Locked' | 'Not Locked';
       startDate?: string;
       endDate?: string;
+      sortBy?: string;
+      sortOrder?: string;
     }
   ): Promise<OrganisersResponse> => {
     let url = `/admin/organisers/all-organisers?page=${page}&limit=${limit}`;
@@ -66,6 +68,12 @@ export const organiserService = {
       }
       if (filters.endDate) {
         url += `&endDate=${filters.endDate}`;
+      }
+      if (filters.sortBy) {
+        url += `&sortBy=${filters.sortBy}`;
+      }
+      if (filters.sortOrder) {
+        url += `&sortOrder=${filters.sortOrder}`;
       }
     }
     

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Lock, Unlock, Filter } from 'lucide-react';
+import { Eye, Lock, Unlock, Filter, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { LoadingSpinner } from './loading-spinner';
 import { Pagination } from './pagination';
 import { FilterBar } from './filter-bar';
@@ -61,6 +61,10 @@ interface UserTableProps {
   showCreateButton?: boolean;
   onCreateUser?: () => void;
   createButtonText?: string;
+  // Sorting props
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 export const UserTable: React.FC<UserTableProps> = ({
@@ -91,7 +95,10 @@ export const UserTable: React.FC<UserTableProps> = ({
   showRole = false,
   showCreateButton = false,
   onCreateUser,
-  createButtonText = "Create User"
+  createButtonText = "Create User",
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  onSortChange
 }) => {
   const [openDropdown, setOpenDropdown] = React.useState<string | null>(null);
 
@@ -119,6 +126,28 @@ export const UserTable: React.FC<UserTableProps> = ({
       className: user.locked ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
     }
   ];
+
+  const handleSort = (field: string) => {
+    if (!onSortChange) return;
+    
+    if (sortBy === field) {
+      // Toggle sort order if same field
+      onSortChange(field, sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to desc for new field
+      onSortChange(field, 'desc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (!onSortChange || sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-4 h-4 text-primary-600" />
+      : <ArrowDown className="w-4 h-4 text-primary-600" />;
+  };
 
   // Get avatar gradient based on user type
   const getAvatarGradient = () => {
@@ -233,10 +262,11 @@ export const UserTable: React.FC<UserTableProps> = ({
             <div className="overflow-x-auto min-h-[350px]">
               <table className="w-full table-fixed min-w-[1000px]">
                 <colgroup>
-                  <col className="w-[250px]" />
+                  <col className="w-[220px]" />
                   {showUsername && <col className="w-[120px]" />}
-                  <col className="w-[180px]" />
+                  <col className="w-[160px]" />
                   <col className="w-[100px]" />
+                  <col className="w-[120px]" />
                   <col className="w-[120px]" />
                   {showEventsJoined && <col className="w-[100px]" />}
                   {showEventsCreated && <col className="w-[100px]" />}
@@ -260,7 +290,24 @@ export const UserTable: React.FC<UserTableProps> = ({
                       Status
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Last Login
+                      <button
+                        onClick={() => handleSort('lastLogin')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Last Login</span>
+                        {getSortIcon('lastLogin')}
+                      </button>
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      <button
+                        onClick={() => handleSort('createdAt')}
+                        className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
+                        disabled={!onSortChange}
+                      >
+                        <span>Created At</span>
+                        {getSortIcon('createdAt')}
+                      </button>
                     </th>
                     {showEventsJoined && (
                       <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
@@ -324,6 +371,9 @@ export const UserTable: React.FC<UserTableProps> = ({
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
                         {new Date(user.lastLogin).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">
+                        {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       {showEventsJoined && (
                         <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-100">

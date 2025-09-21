@@ -25,7 +25,7 @@ interface TransactionState {
   setCurrentPage: (page: number) => void;
   
   // API Actions
-  fetchUserTransactions: (userId: string, page?: number, searchTerm?: string) => Promise<void>;
+  fetchUserTransactions: (userId: string, page?: number, searchTerm?: string, sortBy?: string, sortOrder?: 'asc' | 'desc') => Promise<void>;
   clearError: () => void;
   resetStore: () => void;
 }
@@ -68,7 +68,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     filters: initialFilters
   }),
 
-  fetchUserTransactions: async (userId: string, page = 1, searchTerm = '') => {
+  fetchUserTransactions: async (userId: string, page = 1, searchTerm = '', sortBy = 'createdAt', sortOrder = 'desc') => {
     const { filters, limit } = get();
     
     try {
@@ -80,7 +80,9 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
         paymentMethod: filters.paymentMethod,
         searchTerm: searchTerm.trim(),
         startDate: filters.startDate,
-        endDate: filters.endDate
+        endDate: filters.endDate,
+        sortBy,
+        sortOrder
       };
       
       const response = await transactionService.getUserTransactions(userId, page, limit, apiFilters);

@@ -89,6 +89,8 @@ export const eventService = {
       status?: string;
       adminStatus?: string;
       searchTerm?: string;
+      sortBy?: string;
+      sortOrder?: string;
     }
   ): Promise<EventsResponse> => {
     let url = `/admin/events/all-events?page=${page}&limit=${limit}`;
@@ -99,6 +101,8 @@ export const eventService = {
       if (filters.status && filters.status !== 'All') url += `&status=${filters.status}`;
       if (filters.adminStatus && filters.adminStatus !== 'All') url += `&adminStatus=${filters.adminStatus}`;
       if (filters.searchTerm && filters.searchTerm.trim()) url += `&search=${encodeURIComponent(filters.searchTerm.trim())}`;
+      if (filters.sortBy) url += `&sortBy=${filters.sortBy}`;
+      if (filters.sortOrder) url += `&sortOrder=${filters.sortOrder}`;
     }
     
     const response = await api.get(url);

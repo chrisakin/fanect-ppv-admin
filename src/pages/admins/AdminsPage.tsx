@@ -30,6 +30,10 @@ const AdminsPage: React.FC = () => {
     clearError
   } = useAdminStore();
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     type: 'lock' | 'unlock' | null;
@@ -51,20 +55,20 @@ const AdminsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchAdmins(currentPage, filters.searchTerm);
-  }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate]);
+    fetchAdmins(currentPage, filters.searchTerm, sortBy, sortOrder);
+  }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate, sortBy, sortOrder]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
-        fetchAdmins(1, filters.searchTerm);
+        fetchAdmins(1, filters.searchTerm, sortBy, sortOrder);
       } else {
         setCurrentPage(1);
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [filters.searchTerm]);
+  }, [filters.searchTerm, sortBy, sortOrder]);
 
   const openConfirmationModal = (type: 'lock' | 'unlock', adminId: string, adminName: string) => {
     setModalState({
@@ -153,6 +157,15 @@ const AdminsPage: React.FC = () => {
     }
   };
 
+  // Handle sorting
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortBy(field);
+    setSortOrder(order);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
   const getModalConfig = () => {
     const { type, adminName } = modalState;
     
@@ -207,6 +220,9 @@ const AdminsPage: React.FC = () => {
         showCreateButton={true}
         onCreateUser={() => setIsCreateModalOpen(true)}
         createButtonText="Create Admin"
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
 
       {/* Confirmation Modal */}

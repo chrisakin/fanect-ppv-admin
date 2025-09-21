@@ -44,6 +44,10 @@ const SingleEventPage: React.FC = () => {
     resetStore: resetEventTransactionStore
   } = useEventTransactionStore();
   
+  // Sorting state for event transactions
+  const [eventTransactionSortBy, setEventTransactionSortBy] = useState('createdAt');
+  const [eventTransactionSortOrder, setEventTransactionSortOrder] = useState<'asc' | 'desc'>('desc');
+  
   // Event Feedback store
   const {
     feedbacks: eventFeedbacks,
@@ -114,16 +118,16 @@ const SingleEventPage: React.FC = () => {
   // Fetch event transactions when transactions tab is active
   useEffect(() => {
     if (activeTab === 'transactions' && id) {
-      fetchEventTransactions(id, eventTransactionsCurrentPage, eventTransactionFilters.searchTerm);
+      fetchEventTransactions(id, eventTransactionsCurrentPage, eventTransactionFilters.searchTerm, eventTransactionSortBy, eventTransactionSortOrder);
     }
-  }, [activeTab, id, eventTransactionsCurrentPage, eventTransactionFilters.status, eventTransactionFilters.giftStatus, eventTransactionFilters.paymentMethod, eventTransactionFilters.startDate, eventTransactionFilters.endDate, eventTransactionFilters.currency, fetchEventTransactions, eventTransactionFilters.searchTerm]);
+  }, [activeTab, id, eventTransactionsCurrentPage, eventTransactionFilters.status, eventTransactionFilters.giftStatus, eventTransactionFilters.paymentMethod, eventTransactionFilters.startDate, eventTransactionFilters.endDate, eventTransactionFilters.currency, fetchEventTransactions, eventTransactionFilters.searchTerm, eventTransactionSortBy, eventTransactionSortOrder]);
 
   // Handle event transaction search with debounce
   useEffect(() => {
     if (activeTab === 'transactions' && id) {
       const timeoutId = setTimeout(() => {
         if (eventTransactionsCurrentPage === 1) {
-          fetchEventTransactions(id, 1, eventTransactionFilters.searchTerm);
+          fetchEventTransactions(id, 1, eventTransactionFilters.searchTerm, eventTransactionSortBy, eventTransactionSortOrder);
         } else {
           setEventTransactionCurrentPage(1);
         }
@@ -131,7 +135,7 @@ const SingleEventPage: React.FC = () => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [activeTab, eventTransactionFilters.searchTerm, eventTransactionsCurrentPage, fetchEventTransactions, id, setEventTransactionCurrentPage]);
+  }, [activeTab, eventTransactionFilters.searchTerm, eventTransactionsCurrentPage, fetchEventTransactions, id, setEventTransactionCurrentPage, eventTransactionSortBy, eventTransactionSortOrder]);
 
   // Fetch event feedbacks when feedback tab is active
   useEffect(() => {
@@ -298,6 +302,15 @@ const SingleEventPage: React.FC = () => {
   // Handle currency filter change
   const handleEventTransactionCurrencyFilterChange = (currencies: string[]) => {
     setEventTransactionFilters({ currency: currencies });
+    if (eventTransactionsCurrentPage !== 1) {
+      setEventTransactionCurrentPage(1);
+    }
+  };
+
+  // Handle event transaction sorting
+  const handleEventTransactionSortChange = (field: string, order: 'asc' | 'desc') => {
+    setEventTransactionSortBy(field);
+    setEventTransactionSortOrder(order);
     if (eventTransactionsCurrentPage !== 1) {
       setEventTransactionCurrentPage(1);
     }
@@ -1000,6 +1013,9 @@ const SingleEventPage: React.FC = () => {
                 showCurrencyFilter={true}
                 selectedCurrencies={eventTransactionFilters.currency}
                 onCurrencyFilterChange={handleEventTransactionCurrencyFilterChange}
+                sortBy={eventTransactionSortBy}
+                sortOrder={eventTransactionSortOrder}
+                onSortChange={handleEventTransactionSortChange}
               />
             </div>
           )}
