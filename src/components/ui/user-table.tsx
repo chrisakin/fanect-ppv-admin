@@ -174,7 +174,7 @@ export const UserTable: React.FC<UserTableProps> = ({
       value: filters.locked,
       icon: Filter,
       options: [
-        { value: 'All', label: 'All Locked' },
+        { value: 'All', label: 'All Users' },
         { value: 'Locked', label: 'Locked' },
         { value: 'Not Locked', label: 'Not Locked' }
       ]
@@ -264,7 +264,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                     </th>
                     {showEventsJoined && (
                       <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                        Events Joined
+                        Purchased Streampass
                       </th>
                     )}
                     {showEventsCreated && (

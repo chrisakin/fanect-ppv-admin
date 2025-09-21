@@ -206,7 +206,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       label: 'Admin Status',
       value: filters.adminStatus,
       options: [
-        { value: 'All', label: 'All Admin Status' },
+        { value: 'All', label: 'All Approval Status' },
         { value: 'Pending', label: 'Pending' },
         { value: 'Approved', label: 'Approved' },
         { value: 'Rejected', label: 'Rejected' }
@@ -289,7 +289,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                       Status
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
-                      Admin Status
+                      Approval Status
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Price
