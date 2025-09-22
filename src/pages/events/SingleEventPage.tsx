@@ -572,15 +572,20 @@ const SingleEventPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2 lg:gap-3 flex-shrink-0">
                   <button
                     onClick={() => navigate(`/events/edit/${event._id}`)}
-                    className="px-3 lg:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2"
+                    disabled={event.isDeleted}
+                    className={`px-3 lg:px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      event.isDeleted ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-gray-600 text-white hover:bg-gray-700'
+                    }`}
                   >
                     <Edit3 className="w-4 h-4" />
                     <span>Edit Event</span>
                   </button>
                   <button
                     onClick={() => openConfirmationModal('delete', event._id)}
-                    disabled={actionLoading === event._id || isDeletingEvent}
-                    className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={actionLoading === event._id || isDeletingEvent || event.isDeleted}
+                    className={`px-3 lg:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      event.isDeleted ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
                   >
                     {isDeletingEvent ? (
                       <>
@@ -596,11 +601,13 @@ const SingleEventPage: React.FC = () => {
                   </button>
                   <button
                     onClick={handleToggleSaveStream}
-                    disabled={isTogglingSaveStream}
+                    disabled={isTogglingSaveStream || event.isDeleted}
                     className={`px-3 lg:px-4 py-2 rounded-lg transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      event.canWatchSavedStream
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                      event.isDeleted 
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : event.canWatchSavedStream
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-gray-600 text-white hover:bg-gray-700'
                     }`}
                   >
                     {isTogglingSaveStream ? (
@@ -621,14 +628,14 @@ const SingleEventPage: React.FC = () => {
                     <>
                       <button
                         onClick={() => openConfirmationModal('approve', event._id)}
-                        disabled={actionLoading === event._id}
+                        disabled={actionLoading === event._id || event.isDeleted}
                         className="px-3 lg:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                       >
                         {actionLoading === event._id ? 'Processing...' : 'Approve'}
                       </button>
                       <button
                         onClick={() => openConfirmationModal('reject', event._id)}
-                        disabled={actionLoading === event._id}
+                        disabled={actionLoading === event._id || event.isDeleted}
                         className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                       >
                         {actionLoading === event._id ? 'Processing...' : 'Reject'}
@@ -640,7 +647,7 @@ const SingleEventPage: React.FC = () => {
                       {event.status !== 'Past' && (
                         <button
                         onClick={() => openConfirmationModal(event.status === 'Live' ? 'stream-end' : 'stream-start', event._id)}
-                        disabled={actionLoading === event._id}
+                        disabled={actionLoading === event._id || event.isDeleted}
                         className="px-3 lg:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap flex items-center space-x-2"
                       >
                         <Activity className="w-4 h-4" />
@@ -650,7 +657,7 @@ const SingleEventPage: React.FC = () => {
                       {event.published ? (
                         <button
                           onClick={() => openConfirmationModal('unpublish', event._id)}
-                          disabled={actionLoading === event._id}
+                          disabled={actionLoading === event._id || event.isDeleted}
                           className="px-3 lg:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                         >
                           {actionLoading === event._id ? 'Processing...' : 'Unpublish Event'}
@@ -658,7 +665,7 @@ const SingleEventPage: React.FC = () => {
                       ) : (
                         <button
                           onClick={() => openConfirmationModal('publish', event._id)}
-                          disabled={actionLoading === event._id}
+                          disabled={actionLoading === event._id || event.isDeleted}
                           className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                         >
                           {actionLoading === event._id ? 'Processing...' : 'Publish Event'}
@@ -669,7 +676,7 @@ const SingleEventPage: React.FC = () => {
                   {event.adminStatus === 'Rejected' && (
                     <button
                       onClick={() => openConfirmationModal('approve', event._id)}
-                      disabled={actionLoading === event._id}
+                      disabled={actionLoading === event._id || event.isDeleted}
                       className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm disabled:opacity-50 whitespace-nowrap"
                     >
                       {actionLoading === event._id ? 'Processing...' : 'Approve Event'}
@@ -696,6 +703,19 @@ const SingleEventPage: React.FC = () => {
               )}
             </div>
           </div>
+          
+          {/* Deleted Event Warning */}
+          {event.isDeleted && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mr-3" />
+                <div>
+                  <p className="text-red-800 dark:text-red-200 font-medium">This event has been deleted</p>
+                  <p className="text-red-700 dark:text-red-300 text-sm">No actions can be performed on deleted events. You can only view the details.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}
@@ -843,6 +863,14 @@ const SingleEventPage: React.FC = () => {
                   <span className="text-gray-600 dark:text-dark-300">Can Watch Saved Stream:</span>
                   <span className="text-gray-900 dark:text-dark-100 font-semibold">
                     {event.canWatchSavedStream ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-dark-300">Delete Status:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    event.isDeleted ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                  }`}>
+                    {event.isDeleted ? 'Deleted' : 'Active'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

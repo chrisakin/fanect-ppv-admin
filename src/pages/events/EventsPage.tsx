@@ -208,6 +208,14 @@ const EventsPage: React.FC = () => {
 
   // Handle edit event
   const handleEditEvent = (eventId: string) => {
+    const event = events.find(e => e._id === eventId);
+    if (event?.isDeleted) {
+      setSuccessAlert({
+        isOpen: true,
+        message: 'Cannot edit a deleted event. You can only view its details.'
+      });
+      return;
+    }
     setOpenDropdown(null);
     navigate(`/events/edit/${eventId}`);
   };

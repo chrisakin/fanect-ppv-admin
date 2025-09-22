@@ -1,6 +1,7 @@
 import api from '../utils/api';
 
 import { EventCreator } from '../types';
+import { eventService } from './eventService';
 
 export interface EventPrice {
   currency: string;
@@ -36,6 +37,7 @@ export interface ApiEvent {
   eventDateTime: string;
   canWatchSavedStream?: boolean;
   isStreaming?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface CreateEventData {

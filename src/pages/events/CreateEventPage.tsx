@@ -31,6 +31,8 @@ const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
+  const [eventData, setEventData] = useState<any>(null);
+  const [eventLoading, setEventLoading] = useState(false);
   
   const {
     formData,
@@ -53,7 +55,28 @@ const CreateEventPage: React.FC = () => {
   // Load event data for editing
   useEffect(() => {
     if (isEditing && id) {
-      loadEventForEdit(id);
+      const fetchEventData = async () => {
+        try {
+          setEventLoading(true);
+          const response = await eventService.getSingleEvent(id);
+          setEventData(response.results);
+          
+          if (response.results.isDeleted) {
+            // Redirect to view page if event is deleted
+            navigate(`/events/${id}`, { replace: true });
+            return;
+          }
+          
+          loadEventForEdit(id);
+        } catch (error) {
+          console.error('Error fetching event data:', error);
+          navigate('/events', { replace: true });
+        } finally {
+          setEventLoading(false);
+        }
+      };
+      
+      fetchEventData();
     } else {
       resetForm();
     }
@@ -180,12 +203,14 @@ const CreateEventPage: React.FC = () => {
     !formData.prices.some(p => p.currency === c)
   );
 
-  if (isLoading) {
+  if (isLoading || eventLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-dark-300">Loading event details...</p>
+          <p className="text-gray-600 dark:text-dark-300">
+            {eventLoading ? 'Loading event details...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );

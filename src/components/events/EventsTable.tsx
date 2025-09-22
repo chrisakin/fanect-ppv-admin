@@ -134,7 +134,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       items.push({
         icon: Edit3,
         label: 'Edit Event',
-        onClick: () => onEditEvent(event._id)
+        onClick: () => onEditEvent(event._id),
+        disabled: event.isDeleted
       });
     }
 
@@ -149,7 +150,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           icon: CheckCircle,
           label: 'Approve Event',
           onClick: () => onApproveEvent(event._id),
-          disabled: actionLoading === event._id,
+          disabled: actionLoading === event._id || event.isDeleted,
           className: 'text-green-700 dark:text-green-400'
         });
       }
@@ -158,7 +159,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           icon: AlertCircle,
           label: 'Reject Event',
           onClick: () => onRejectEvent(event._id),
-          disabled: actionLoading === event._id,
+          disabled: actionLoading === event._id || event.isDeleted,
           className: 'text-red-700 dark:text-red-400'
         });
       }
@@ -170,7 +171,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           icon: Activity,
           label: event.status === 'Live' ? 'Stop Streaming' : 'Start Streaming',
           onClick: () => onStreamAction(event._id, event.status === 'Live' ? 'stream-end' : 'stream-start'),
-          disabled: actionLoading === event._id,
+          disabled: actionLoading === event._id || event.isDeleted,
           className: 'text-blue-700 dark:text-blue-400'
         });
       }
@@ -179,7 +180,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           icon: Clock,
           label: 'Unpublish Event',
           onClick: () => onUnpublishEvent(event._id),
-          disabled: actionLoading === event._id,
+          disabled: actionLoading === event._id || event.isDeleted,
           className: 'text-yellow-700 dark:text-yellow-400'
         });
       }
@@ -188,7 +189,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
           icon: CheckCircle,
           label: 'Publish Event',
           onClick: () => onPublishEvent(event._id),
-          disabled: actionLoading === event._id,
+          disabled: actionLoading === event._id || event.isDeleted,
           className: 'text-green-700 dark:text-green-400'
         });
       }
@@ -199,7 +200,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
         icon: CheckCircle,
         label: 'Approve Event',
         onClick: () => onApproveEvent(event._id),
-        disabled: actionLoading === event._id,
+        disabled: actionLoading === event._id || event.isDeleted,
         className: 'text-green-700 dark:text-green-400'
       });
     }
@@ -209,7 +210,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
         icon: Trash2,
         label: 'Delete Event',
         onClick: () => onDeleteEvent(event._id),
-        disabled: actionLoading === event._id,
+        disabled: actionLoading === event._id || event.isDeleted,
         className: 'text-red-700 dark:text-red-400'
       });
     }
@@ -328,6 +329,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                   <col className="w-[120px]" />
                   <col className="w-[160px]" />
                   <col className="w-[100px]" />
+                  <col className="w-[120px]" />
                   {showActions && <col className="w-[100px]" />}
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-dark-700">
@@ -363,6 +365,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
                       Price
+                    </th>
+                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      Delete Status
                     </th>
                     {showActions && (
                       <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
@@ -425,6 +430,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({
                         <div className="truncate">
                           {event.prices && event.prices.length > 0 ? formatCurrency(event.prices[0].amount, event.prices[0].currency) : 'Free'}
                         </div>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                          event.isDeleted ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                        }`}>
+                          {event.isDeleted ? 'Deleted' : 'Active'}
+                        </span>
                       </td>
                       {showActions && (
                         <td className="px-4 lg:px-6 py-4 text-sm font-medium">

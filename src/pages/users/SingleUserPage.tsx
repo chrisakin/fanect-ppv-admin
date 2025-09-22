@@ -741,7 +741,17 @@ const SingleUserPage: React.FC = () => {
                 showActions={true}
                 showFullActions={false}
                 onViewEvent={(eventId) => navigate(`/events/${eventId}`)}
-                onEditEvent={(eventId) => navigate(`/events/edit/${eventId}`)}
+                onEditEvent={(eventId) => {
+                  const event = userEvents.find(e => e._id === eventId);
+                  if (event?.isDeleted) {
+                    setSuccessAlert({
+                      isOpen: true,
+                      message: 'Cannot edit a deleted event. You can only view its details.'
+                    });
+                    return;
+                  }
+                  navigate(`/events/edit/${eventId}`);
+                }}
               />
             </div>
           )}
