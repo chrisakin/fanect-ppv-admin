@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3, Save, DollarSign } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, AlertCircle, Activity, Edit3, Play, Info, CreditCard, MessageCircle, MapPin, BarChart3, Save, DollarSign, Trash2 } from 'lucide-react';
 import { eventService, ApiEvent } from '../../services/eventService';
 import { useEventTransactionStore } from '../../store/eventTransactionStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
@@ -26,6 +26,7 @@ const SingleEventPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'details' | 'live' | 'transactions' | 'feedback' | 'locations' | 'metrics' | 'revenue'>('details');
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [isTogglingSaveStream, setIsTogglingSaveStream] = useState(false);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
   
   // Event Transaction store
   const {
@@ -68,7 +69,7 @@ const SingleEventPage: React.FC = () => {
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | null;
+    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | 'delete' | null;
     eventId: string | null;
   }>({
     isOpen: false,
@@ -160,7 +161,7 @@ const SingleEventPage: React.FC = () => {
   }, [activeTab, eventFeedbackFilters.searchTerm, eventFeedbacksCurrentPage, fetchEventFeedbacks, id, setEventFeedbackCurrentPage]);
 
   // Open confirmation modal
-  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end', eventId: string) => {
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | 'delete', eventId: string) => {
     setModalState({
       isOpen: true,
       type,
@@ -225,6 +226,33 @@ const SingleEventPage: React.FC = () => {
       closeConfirmationModal();
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Handle delete event
+  const handleDeleteEvent = async () => {
+    if (!event) return;
+
+    try {
+      setIsDeletingEvent(true);
+      const response = await eventService.deleteEvent(event._id);
+      
+      // Show success alert
+      setSuccessAlert({
+        isOpen: true,
+        message: response.message || 'Event deleted successfully!'
+      });
+      
+      // Navigate back to events page after a short delay
+      setTimeout(() => {
+        navigate('/events');
+      }, 1500);
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete event');
+      console.error('Error deleting event:', err);
+    } finally {
+      setIsDeletingEvent(false);
     }
   };
 
@@ -464,6 +492,14 @@ const SingleEventPage: React.FC = () => {
           confirmColor: 'bg-red-600 hover:bg-red-700',
           showReasonInput: false
         };
+      case 'delete':
+        return {
+          title: 'Delete Event',
+          message: `Are you sure you want to delete "${event?.name}"? This action cannot be undone and will permanently remove all event data.`,
+          confirmText: 'Delete Event',
+          confirmColor: 'bg-red-600 hover:bg-red-700',
+          showReasonInput: false
+        };
       default:
         return {
           title: '',
@@ -540,6 +576,23 @@ const SingleEventPage: React.FC = () => {
                   >
                     <Edit3 className="w-4 h-4" />
                     <span>Edit Event</span>
+                  </button>
+                  <button
+                    onClick={() => openConfirmationModal('delete', event._id)}
+                    disabled={actionLoading === event._id || isDeletingEvent}
+                    className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm whitespace-nowrap flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDeletingEvent ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Event</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleToggleSaveStream}
@@ -1075,8 +1128,8 @@ const SingleEventPage: React.FC = () => {
       <ConfirmationModal
         isOpen={modalState.isOpen}
         onClose={closeConfirmationModal}
-        onConfirm={handleEventAction}
-        isLoading={actionLoading === modalState.eventId}
+        onConfirm={modalState.type === 'delete' ? handleDeleteEvent : handleEventAction}
+        isLoading={modalState.type === 'delete' ? isDeletingEvent : actionLoading === modalState.eventId}
         {...getModalConfig()}
       />
 

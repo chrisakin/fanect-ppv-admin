@@ -291,5 +291,11 @@ export const eventService = {
   getEventRevenueReport: async (id: string): Promise<{ message: string; data: Array<{ currency: string; totalRevenue: number; totalStreampass: number }> }> => {
     const response = await api.get(`/admin/events/revenue-report/${id}`);
     return response.data;
+  },
+
+  // Delete event
+  deleteEvent: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/admin/events/delete/${id}`);
+    return response.data;
   }
 };

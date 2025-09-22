@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Filter, Eye, Edit3, CheckCircle, Clock, AlertCircle, Activity, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Calendar, Filter, Eye, Edit3, CheckCircle, Clock, AlertCircle, Activity, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { ApiEvent } from '../../services/eventService';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { Pagination } from '../ui/pagination';
@@ -35,6 +35,7 @@ interface EventsTableProps {
   onUnpublishEvent?: (eventId: string) => void;
   onPublishEvent?: (eventId: string) => void;
   onStreamAction?: (eventId: string, action: 'stream-start' | 'stream-end') => void;
+  onDeleteEvent?: (eventId: string) => void;
   actionLoading?: string | null;
   openDropdown?: string | null;
   onToggleDropdown?: (eventId: string | null) => void;
@@ -69,6 +70,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   onUnpublishEvent,
   onPublishEvent,
   onStreamAction,
+  onDeleteEvent,
   actionLoading,
   openDropdown,
   onToggleDropdown,
@@ -199,6 +201,16 @@ export const EventsTable: React.FC<EventsTableProps> = ({
         onClick: () => onApproveEvent(event._id),
         disabled: actionLoading === event._id,
         className: 'text-green-700 dark:text-green-400'
+      });
+    }
+    // Always show delete option for all events
+    if (onDeleteEvent) {
+      items.push({
+        icon: Trash2,
+        label: 'Delete Event',
+        onClick: () => onDeleteEvent(event._id),
+        disabled: actionLoading === event._id,
+        className: 'text-red-700 dark:text-red-400'
       });
     }
 

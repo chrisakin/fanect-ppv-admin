@@ -19,12 +19,14 @@ const EventsPage: React.FC = () => {
   // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | null;
+    type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'stream-start' | 'stream-end' | 'delete' | null;
     eventId: string | null;
+    eventName?: string | null;
   }>({
     isOpen: false,
     type: null,
-    eventId: null
+    eventId: null,
+    eventName: null
   });
   
   // Success alert state
@@ -103,11 +105,12 @@ const EventsPage: React.FC = () => {
   }, [filters.searchTerm, sortBy, sortOrder]);
 
   // Open confirmation modal
-  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish', eventId: string) => {
+  const openConfirmationModal = (type: 'approve' | 'reject' | 'unpublish' | 'publish' | 'delete', eventId: string, eventName?: string) => {
     setModalState({
       isOpen: true,
       type,
-      eventId
+      eventId,
+      eventName: eventName || null
     });
     setOpenDropdown(null);
   };
@@ -117,7 +120,8 @@ const EventsPage: React.FC = () => {
     setModalState({
       isOpen: false,
       type: null,
-      eventId: null
+      eventId: null,
+      eventName: null
     });
   };
 
@@ -145,6 +149,9 @@ const EventsPage: React.FC = () => {
         case 'stream-start':
         case 'stream-end':
           response = await eventService.updateEventSession(modalState.eventId, modalState.type);
+          break;
+        case 'delete':
+          response = await eventService.deleteEvent(modalState.eventId);
           break;
       }
       
@@ -181,10 +188,18 @@ const EventsPage: React.FC = () => {
     setModalState({
       isOpen: true,
       type: session,
-      eventId
+      eventId,
+      eventName: null
     });
     setOpenDropdown(null);
   };
+
+  // Handle delete event
+  const handleDeleteEvent = (eventId: string) => {
+    const event = events.find(e => e._id === eventId);
+    openConfirmationModal('delete', eventId, event?.name);
+  };
+
   // Handle view event
   const handleViewEvent = (eventId: string) => {
     setOpenDropdown(null);
@@ -254,6 +269,14 @@ const EventsPage: React.FC = () => {
           title: 'Stop Streaming',
           message: 'Are you sure you want to stop streaming for this event?',
           confirmText: 'Stop Streaming',
+          confirmColor: 'bg-red-600 hover:bg-red-700',
+          showReasonInput: false
+        };
+      case 'delete':
+        return {
+          title: 'Delete Event',
+          message: `Are you sure you want to delete "${modalState.eventName}"? This action cannot be undone and will permanently remove all event data.`,
+          confirmText: 'Delete Event',
           confirmColor: 'bg-red-600 hover:bg-red-700',
           showReasonInput: false
         };
@@ -350,6 +373,7 @@ const EventsPage: React.FC = () => {
         onUnpublishEvent={(eventId) => openConfirmationModal('unpublish', eventId)}
         onPublishEvent={(eventId) => openConfirmationModal('publish', eventId)}
         onStreamAction={handleStreamAction}
+        onDeleteEvent={handleDeleteEvent}
         actionLoading={actionLoading}
         openDropdown={openDropdown}
         onToggleDropdown={setOpenDropdown}
