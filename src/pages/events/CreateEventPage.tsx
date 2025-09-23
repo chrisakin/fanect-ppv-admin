@@ -26,6 +26,7 @@ import { useEventStore } from '../../store/eventStore';
 import { Currency } from '../../types/event';
 import { CustomDatePicker } from "../../components/ui/custom-date-picker";
 import { CustomTimePicker } from "../../components/ui/custom-time-picker";
+import { eventService } from '../../services/eventService';
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
