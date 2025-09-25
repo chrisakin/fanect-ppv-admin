@@ -185,7 +185,9 @@ const CreateEventPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (formData.prices.length === 0 || formData.prices.some(p => p.amount <= 0)) {
+      errors.prices = "At least one valid price is required";
+    }
     const result = await submitEvent(isEditing, id);
     
     if (result.success) {
