@@ -879,6 +879,12 @@ const SingleEventPage: React.FC = () => {
                     {event.haveBroadcastRoom ? 'Yes' : 'No'}
                   </span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-dark-300">Streaming Device Type:</span>
+                  <span className="text-gray-900 dark:text-dark-100 font-semibold">
+                    {(event as any).streamingDeviceType || 'Not specified'}
+                  </span>
+                </div>
               </div>
             </div>
 
