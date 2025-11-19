@@ -23,7 +23,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useEventStore } from '../../store/eventStore';
-import { Currency } from '../../types/event';
+import { Currency, StreamingDeviceType } from '../../types/event';
 import { CustomDatePicker } from "../../components/ui/custom-date-picker";
 import { CustomTimePicker } from "../../components/ui/custom-time-picker";
 import { eventService } from '../../services/eventService';
@@ -185,7 +185,11 @@ const CreateEventPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (formData.prices.length === 0 || formData.prices.some(p => p.amount <= 0)) {
+      errors.prices = "At least one valid price is required or an amount is empty or 0";
+      setError('price', 'At least one valid price is required or an amount is empty or 0');
+      return
+    }
     const result = await submitEvent(isEditing, id);
     
     if (result.success) {
@@ -543,6 +547,29 @@ const CreateEventPage: React.FC = () => {
                         </p>
                       )}
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-200 mb-2">
+                      Streaming Device Type *
+                    </label>
+                    <Select
+                      value={formData.streamingDeviceType}
+                      onValueChange={(value) => handleInputChange('streamingDeviceType', value as StreamingDeviceType)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-12 bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600">
+                        <SelectItem value={StreamingDeviceType.MOBILE} className="hover:bg-gray-100 dark:hover:bg-dark-700">
+                          {StreamingDeviceType.MOBILE}
+                        </SelectItem>
+                        <SelectItem value={StreamingDeviceType.NOTMOBILE} className="hover:bg-gray-100 dark:hover:bg-dark-700">
+                          {StreamingDeviceType.NOTMOBILE}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>

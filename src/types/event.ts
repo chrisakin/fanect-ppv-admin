@@ -1,3 +1,8 @@
+export enum StreamingDeviceType {
+  MOBILE = 'Mobile',
+  NOTMOBILE = 'Not Mobile',
+}
+
 export enum Currency {
     USD = 'USD',
     NGN = 'NGN',

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { eventService, CreateEventData, UpdateEventData } from '../services/eventService';
-import { Currency } from '../types/event';
+import { Currency, StreamingDeviceType } from '../types/event';
 
 export interface EventPrice {
   currency: Currency;
@@ -17,6 +17,7 @@ export interface EventFormData {
   haveBroadcastRoom: boolean;
   broadcastSoftware: string;
   scheduledTestDate: string;
+  streamingDeviceType: StreamingDeviceType;
   bannerUrl: File | null;
   watermarkUrl: File | null;
   eventTrailer: File | null;
@@ -61,6 +62,7 @@ const initialFormData: EventFormData = {
   haveBroadcastRoom: false,
   broadcastSoftware: '',
   scheduledTestDate: '',
+  streamingDeviceType: StreamingDeviceType.NOTMOBILE,
   bannerUrl: null,
   watermarkUrl: null,
   eventTrailer: null,
@@ -134,6 +136,7 @@ export const useEventStore = create<EventState>((set, get) => ({
         haveBroadcastRoom: event.haveBroadcastRoom || false,
         broadcastSoftware: event.broadcastSoftware || '',
         scheduledTestDate: event.scheduledTestDate ? new Date(event.scheduledTestDate).toISOString().split('T')[0] : '',
+        streamingDeviceType: (event as any).streamingDeviceType || StreamingDeviceType.NOTMOBILE,
         bannerUrl: null,
         watermarkUrl: null,
         eventTrailer: null,
@@ -239,10 +242,11 @@ export const useEventStore = create<EventState>((set, get) => ({
         haveBroadcastRoom: formData.haveBroadcastRoom,
         broadcastSoftware: formData.broadcastSoftware,
         scheduledTestDate: formData.scheduledTestDate,
+        streamingDeviceType: formData.streamingDeviceType,
         banner: formData.bannerUrl,
         watermark: formData.watermarkUrl,
         trailer: formData.eventTrailer,
-      };
+      } as any;
 
       if (isEditing && eventId) {
         await eventService.updateEvent(eventId, submitData);

@@ -174,7 +174,7 @@ export const eventService = {
   // Create new event
   createEvent: async (eventData: CreateEventData): Promise<{ message: string }> => {
     const formData = new FormData();
-    
+
     // Add text fields
     formData.append('name', eventData.name);
     formData.append('date', eventData.date);
@@ -182,9 +182,13 @@ export const eventService = {
     formData.append('description', eventData.description);
     formData.append('haveBroadcastRoom', eventData.haveBroadcastRoom.toString());
     formData.append('broadcastSoftware', eventData.broadcastSoftware);
-    
+
     if (eventData.scheduledTestDate) {
       formData.append('scheduledTestDate', eventData.scheduledTestDate);
+    }
+
+    if ((eventData as any).streamingDeviceType) {
+      formData.append('streamingDeviceType', (eventData as any).streamingDeviceType);
     }
     
     // Add prices as JSON string
@@ -212,7 +216,7 @@ export const eventService = {
   // Update existing event
   updateEvent: async (id: string, eventData: UpdateEventData): Promise<{ message: string }> => {
     const formData = new FormData();
-    
+
     // Add text fields
     formData.append('name', eventData.name);
     formData.append('date', eventData.date);
@@ -220,9 +224,13 @@ export const eventService = {
     formData.append('description', eventData.description);
     formData.append('haveBroadcastRoom', eventData.haveBroadcastRoom.toString());
     formData.append('broadcastSoftware', eventData.broadcastSoftware);
-    
+
     if (eventData.scheduledTestDate) {
       formData.append('scheduledTestDate', eventData.scheduledTestDate);
+    }
+
+    if ((eventData as any).streamingDeviceType) {
+      formData.append('streamingDeviceType', (eventData as any).streamingDeviceType);
     }
     
     // Add prices as JSON string
