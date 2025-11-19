@@ -3,10 +3,20 @@ import { Bell, Search, User, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
+/**
+ * HeaderProps
+ * - `onMenuClick`: optional callback invoked when the mobile menu button is clicked
+ */
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
+/**
+ * Header component
+ * - Renders the top navigation bar used across the admin area.
+ * - Includes: mobile menu button, (commented-out) search input, theme toggle,
+ *   notifications placeholder, and a user profile avatar/label.
+ */
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { user } = useAuth();
@@ -15,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     <header className="bg-white dark:bg-dark-950 shadow-sm border-b border-gray-200 dark:border-dark-800 transition-colors duration-200">
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center space-x-4">
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button: visible on small screens; calls `onMenuClick` to open the mobile sidebar */}
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 rounded-lg bg-gray-100 dark:bg-dark-800 hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors duration-200"
@@ -24,7 +34,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             <Menu className="w-5 h-5 text-gray-600 dark:text-dark-300" />
           </button>
           
-          {/* Search Bar */}
+          {/* Search Bar (commented out): desktop search UI that can be enabled if needed.
+              The small-screen search is rendered as a separate button further right. */}
           {/* <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
             <input
@@ -36,12 +47,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Mobile Search Button */}
+          {/* Mobile Search Button: toggles a compact search input on small screens */}
           <button className="sm:hidden p-2 rounded-lg bg-gray-100 dark:bg-dark-800 hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors duration-200">
             <Search className="w-5 h-5 text-gray-600 dark:text-dark-300" />
           </button>
           
-          {/* Theme Toggle */}
+          {/* Theme Toggle: switches between light/dark themes via ThemeContext */}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg bg-gray-100 dark:bg-dark-800 hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors duration-200"
@@ -54,7 +65,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             )}
           </button>
           
-          {/* Notifications */}
+          {/* Notifications: currently a placeholder; commented-out markup shows
+              how a notification bell + badge could be rendered here. */}
           <div className="relative">
             {/* <Bell className="w-6 h-6 text-gray-600 dark:text-dark-300 cursor-pointer hover:text-gray-900 dark:hover:text-dark-100 transition-colors duration-200" />
             <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -62,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div> */}
           </div>
           
-          {/* User Profile */}
+          {/* User Profile: avatar (initials or icon) and user name + role */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
               {user?.name ? (

@@ -4,26 +4,42 @@ import { eventService } from '../../services/eventService';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { ErrorAlert } from '../ui/error-alert';
 
+/**
+ * Shape of each revenue row returned from the API.
+ * - `currency`: the ISO currency code (e.g., 'USD')
+ * - `totalRevenue`: aggregated revenue amount in that currency
+ * - `totalStreampass`: number of stream passes sold in that currency
+ */
 interface RevenueData {
   currency: string;
   totalRevenue: number;
   totalStreampass: number;
 }
 
+/** Props */
 interface RevenueReportTabProps {
   eventId: string;
 }
 
+/**
+ * `RevenueReportTab` fetches and displays revenue analytics for a single event.
+ * It shows summary cards, a revenue-by-currency table and high-level insights.
+ */
 export const RevenueReportTab: React.FC<RevenueReportTabProps> = ({ eventId }) => {
+  // Component state
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch revenue report when component mounts
+  // Fetch revenue report when component mounts or when `eventId` changes.
   useEffect(() => {
     fetchRevenueReport();
   }, [eventId]);
 
+  /**
+   * fetchRevenueReport: calls the backend service to retrieve revenue data
+   * for the provided `eventId`. Updates `revenueData`, `loading` and `error`.
+   */
   const fetchRevenueReport = async () => {
     try {
       setLoading(true);
@@ -38,6 +54,7 @@ export const RevenueReportTab: React.FC<RevenueReportTabProps> = ({ eventId }) =
     }
   };
 
+  /** Formats numbers as localized currency strings. */
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -48,7 +65,7 @@ export const RevenueReportTab: React.FC<RevenueReportTabProps> = ({ eventId }) =
     return formatter.format(amount);
   };
 
-  // Calculate totals
+  // Aggregate helpers used by the UI
   const getTotalRevenue = () => {
     return revenueData.reduce((sum, item) => sum + item.totalRevenue, 0);
   };
@@ -57,6 +74,7 @@ export const RevenueReportTab: React.FC<RevenueReportTabProps> = ({ eventId }) =
     return revenueData.reduce((sum, item) => sum + item.totalStreampass, 0);
   };
 
+  // Return the currency row with the highest revenue (or null if empty)
   const getHighestRevenueCurrency = () => {
     if (revenueData.length === 0) return null;
     return revenueData.reduce((max, item) => 
@@ -64,6 +82,7 @@ export const RevenueReportTab: React.FC<RevenueReportTabProps> = ({ eventId }) =
     );
   };
 
+  // Return the currency row with the most stream pass sales
   const getMostPopularCurrency = () => {
     if (revenueData.length === 0) return null;
     return revenueData.reduce((max, item) => 

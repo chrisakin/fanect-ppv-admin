@@ -7,6 +7,15 @@ import { Pagination } from '../ui/pagination';
 import { FilterBar } from '../ui/filter-bar';
 import { CustomDateRangePicker } from '../ui/custom-date-range-picker';
 
+/**
+ * TransactionTableProps
+ *
+ * Describes the props accepted by `TransactionTable`.
+ * - `transactions`: list of transaction records to render
+ * - pagination props: `currentPage`, `totalPages`, `totalDocs`, `limit`
+ * - callbacks for pagination and sorting
+ * - optional flags to show/hide columns and filters
+ */
 interface TransactionTableProps {
   transactions: UserTransaction[];
   loading: boolean;
@@ -57,6 +66,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   sortOrder = 'desc',
   onSortChange
 }) => {
+  /**
+   * getTransactionStatusColor
+   *
+   * Returns a set of Tailwind CSS classes to visually indicate the
+   * transaction status. Used to style the small status pill in the table.
+   */
   const getTransactionStatusColor = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.SUCCESSFUL:
@@ -70,6 +85,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     }
   };
 
+  /**
+   * formatCurrency
+   *
+   * Helper for formatting numeric amounts as localized currency strings.
+   * Keeps UI formatting consistent across the table.
+   */
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -80,6 +101,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     return formatter.format(amount);
   };
 
+  /**
+   * handleSort
+   *
+   * Triggers the parent sort callback. If the same field is clicked twice
+   * it toggles between ascending/descending; otherwise it switches to the
+   * new field with a default descending order.
+   */
   const handleSort = (field: string) => {
     if (!onSortChange) return;
     
@@ -92,6 +120,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     }
   };
 
+  /**
+   * getSortIcon
+   *
+   * Returns the appropriate icon depending on the current sort state for
+   * a column header (unspecified / asc / desc).
+   */
   const getSortIcon = (field: string) => {
     if (!onSortChange || sortBy !== field) {
       return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
@@ -102,7 +136,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       : <ArrowDown className="w-4 h-4 text-primary-600" />;
   };
 
-  // Filter configuration
+  // Filter configuration: used by the `FilterBar` component when filters are enabled.
+  // Each config entry defines how a specific filter renders and provides the
+  // current value so the parent `FilterBar` can display active filters.
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
       key: 'dateRange',

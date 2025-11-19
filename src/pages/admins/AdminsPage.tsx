@@ -7,11 +7,24 @@ import { SuccessAlert } from '../../components/ui/success-alert';
 import { CreateAdminModal } from '../../components/ui/create-admin-modal';
 import { UserTable } from '../../components/ui/user-table';
 
+/**
+ * AdminsPage
+ *
+ * Page component that displays and manages admin users. It composes
+ * the `UserTable` UI component and provides callbacks for pagination,
+ * filtering, sorting and admin actions (lock/unlock). It also shows
+ * a create-admin modal and success/error messaging.
+ */
 const AdminsPage: React.FC = () => {
   const navigate = useNavigate();
-  
+
+  // Local UI state -------------------------------------------------------
+  // Controls visibility of the "Create Admin" modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+
+  // Pull state and actions from the admin store (Zustand/whatever store)
+  // The store provides admins list, pagination data, filters and action
+  // helpers such as `fetchAdmins`, `lockAdmin` and `unlockAdmin`.
   const {
     admins,
     loading,
@@ -30,10 +43,12 @@ const AdminsPage: React.FC = () => {
     clearError
   } = useAdminStore();
 
-  // Sorting state
+  // Sorting state (column and direction)
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Confirmation modal state used for lock/unlock admin actions.
+  // `type` indicates the intended action and `adminId/adminName` identify the target.
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     type: 'lock' | 'unlock' | null;
@@ -46,6 +61,7 @@ const AdminsPage: React.FC = () => {
     adminName: null
   });
 
+  // Success alert shown after successful admin operations
   const [successAlert, setSuccessAlert] = useState<{
     isOpen: boolean;
     message: string;
@@ -54,10 +70,13 @@ const AdminsPage: React.FC = () => {
     message: ''
   });
 
+  // Fetch admins when pagination, filters or sorting change.
   useEffect(() => {
     fetchAdmins(currentPage, filters.searchTerm, sortBy, sortOrder);
   }, [currentPage, filters.status, filters.locked, filters.startDate, filters.endDate, sortBy, sortOrder]);
 
+  // Debounced refresh behavior for search and sorting changes. Resets to
+  // page 1 when a new search or sort is performed to keep UX predictable.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (currentPage === 1) {
@@ -70,6 +89,7 @@ const AdminsPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [filters.searchTerm, sortBy, sortOrder]);
 
+  // Open the confirmation modal for lock/unlock operations
   const openConfirmationModal = (type: 'lock' | 'unlock', adminId: string, adminName: string) => {
     setModalState({
       isOpen: true,
@@ -79,6 +99,7 @@ const AdminsPage: React.FC = () => {
     });
   };
 
+  // Close the confirmation modal and clear its state
   const closeConfirmationModal = () => {
     setModalState({
       isOpen: false,
@@ -88,6 +109,13 @@ const AdminsPage: React.FC = () => {
     });
   };
 
+  /**
+   * handleAdminAction
+   *
+   * Performs the lock/unlock action for the selected admin using the
+   * store-provided methods. Shows a success alert on success and always
+   * closes the confirmation modal. Errors are logged and the modal is closed.
+   */
   const handleAdminAction = async () => {
     if (!modalState.adminId || !modalState.type) return;
 
@@ -117,6 +145,7 @@ const AdminsPage: React.FC = () => {
     }
   };
 
+  // Pagination helpers used by the `UserTable` component
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -129,6 +158,13 @@ const AdminsPage: React.FC = () => {
     }
   };
 
+  /**
+   * handleFilterChange
+   *
+   * Normalizes filter updates coming from the `UserTable` filter UI. Special
+   * handling is needed for date ranges (serialized as JSON by the filter
+   * component). After updating filters we reset pagination back to page 1.
+   */
   const handleFilterChange = (key: string, value: string) => {
     if (key === 'dateRange') {
       const dateRange = JSON.parse(value);
@@ -144,6 +180,7 @@ const AdminsPage: React.FC = () => {
     }
   };
 
+  // Clear all filter values and reset pagination to page 1
   const clearFilters = () => {
     setFilters({
       status: 'All',
@@ -157,7 +194,7 @@ const AdminsPage: React.FC = () => {
     }
   };
 
-  // Handle sorting
+  // Handle sorting change from the table headers; reset to page 1
   const handleSortChange = (field: string, order: 'asc' | 'desc') => {
     setSortBy(field);
     setSortOrder(order);
@@ -166,6 +203,7 @@ const AdminsPage: React.FC = () => {
     }
   };
 
+  // Return modal configuration based on current modal state (lock vs unlock)
   const getModalConfig = () => {
     const { type, adminName } = modalState;
     

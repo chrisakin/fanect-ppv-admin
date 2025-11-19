@@ -15,14 +15,27 @@ import {
   X
 } from 'lucide-react';
 
+/**
+ * Props for the mobile sidebar component
+ * - `isOpen`: whether the sidebar overlay/drawer is visible
+ * - `onClose`: callback to close the sidebar (also invoked on navigation)
+ */
 interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+/**
+ * MobileSidebar
+ * - Renders a slide-in drawer navigation for small screens.
+ * - When `isOpen` it shows an overlay and the sidebar; closing the
+ *   overlay or clicking a nav link will call `onClose`.
+ */
 const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
+  // Auth helper used for logging out the current user
   const { logout } = useAuth();
   
+  // navItems: an array of navigation entries rendered inside the sidebar
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Calendar, label: 'Events', path: '/events' },
@@ -35,6 +48,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
+  // handleLogout: wrapper to call auth logout then close the sidebar
   const handleLogout = async () => {
     await logout();
     onClose();
@@ -42,7 +56,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay: dark semi-transparent layer behind the drawer. Clicking it closes the drawer. */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -50,18 +64,16 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
         />
       )}
       
-      {/* Sidebar */}
+      {/* Sidebar Drawer: slides in from the left using CSS transform. Hidden on large screens. */}
       <aside className={`
         fixed left-0 top-0 h-screen w-64 bg-white dark:bg-dark-950 shadow-lg border-r border-gray-200 dark:border-dark-800 
         transition-transform duration-300 z-50 lg:hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Header */}
+        {/* Header: brand and close button */}
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center space-x-3">
-            {/* <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-              <Activity className="w-6 h-6 text-white" />
-            </div> */}
+            {/* Optional brand icon could go here */}
             <div>
               <h1 className="text-xl font-bold text-green-600">FaNect</h1>
               <p className="text-sm text-green-600">Admin Portal</p>
@@ -75,7 +87,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
         
-        {/* Navigation */}
+        {/* Navigation links: maps `navItems` to <NavLink> entries. Each link closes the drawer when clicked. */}
         <nav className="mt-8">
           <div className="px-4 space-y-2">
             {navItems.map((item) => (
@@ -98,7 +110,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </nav>
 
-        {/* Logout Button */}
+        {/* Logout Button: anchored to the bottom of the drawer */}
         <div className="absolute bottom-0 w-full p-4">
           <button 
             onClick={handleLogout}

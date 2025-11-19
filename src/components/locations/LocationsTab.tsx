@@ -7,6 +7,16 @@ import { LoadingSpinner } from '../ui/loading-spinner';
 import { ErrorAlert } from '../ui/error-alert';
 import { SuccessAlert } from '../ui/success-alert';
 
+/**
+ * LocationsTab
+ *
+ * Displays and manages the list of countries where an event is available.
+ * Responsibilities:
+ * - Fetch existing locations for an event
+ * - Open a modal to add locations
+ * - Confirm and remove locations
+ * - Show loading, success and error states
+ */
 interface EventLocation {
   location: string;
   _id: string;
@@ -131,6 +141,12 @@ const ALL_LOCATIONS = [
 
 export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
+  // Component local state and UI flags:
+  // - `eventLocations` stores the current locations assigned to the event
+  // - `loading` toggles the initial fetch spinner
+  // - `error` captures API errors to display in `ErrorAlert`
+  // - `isModalOpen` toggles the LocationModal
+  // - `isSubmitting` disables actions while an add/remove request is in-flight
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -179,7 +195,14 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     return location ? location.label : locationValue;
   };
 
-  // Handle multiple location selection
+  /**
+   * handleLocationSubmit
+   *
+   * Receives an array of selected country codes from the `LocationModal`,
+   * prepares the API payload and submits it to persist the new locations
+   * for this event. On success it refreshes the list and shows a success
+   * alert; on failure it sets the `error` state.
+   */
   const handleLocationSubmit = async (selectedLocationValues: string[]) => {
     try {
       setIsSubmitting(true);
@@ -215,7 +238,13 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
     }
   };
 
-  // Handle location removal
+  /**
+   * openDeleteModal
+   *
+   * Opens the confirmation modal and stores the selected location value,
+   * human-readable label and backend id so the modal can present context
+   * and the removal function can act on the correct record.
+   */
   const openDeleteModal = (id: string, locationValue: string) => {
     setDeleteModalState({
       isOpen: true,
@@ -260,7 +289,9 @@ export const LocationsTab: React.FC<LocationsTabProps> = ({ eventId }) => {
   };
 
   // Get existing location values for the modal
-  const existingLocationValues = eventLocations.map(loc => loc.location);
+  // This array is passed to `LocationModal` so already-assigned countries
+  // are excluded from the add-list presented to the admin.
+  const existingLocationValues = eventLocations.map((loc) => loc.location);
 
   if (loading) {
     return <LoadingSpinner />;

@@ -7,6 +7,11 @@ import { Pagination } from '../ui/pagination';
 import { FilterBar } from '../ui/filter-bar';
 import { CustomDateRangePicker } from '../ui/custom-date-range-picker';
 
+/**
+ * Props for `FeedbackTable`.
+ * Displays paginated feedback rows and exposes filter controls and
+ * pagination callbacks to the parent component.
+ */
 interface FeedbackTableProps {
   feedbacks: Feedback[];
   loading: boolean;
@@ -43,9 +48,14 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
   onClearFilters,
   showFilters = false
 }) => {
+  // Local UI state: selected feedback for the modal and modal visibility
   const [selectedFeedback, setSelectedFeedback] = React.useState<Feedback | null>(null);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = React.useState(false);
 
+  /**
+   * renderStars: returns 5 star icons; filled stars correspond to the
+   * numeric `rating` passed in. Used in the Rating column.
+   */
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -55,17 +65,26 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
     ));
   };
 
+  /**
+   * truncateText: shortens long comment strings for table display and
+   * appends an ellipsis. Full text is available in the feedback modal.
+   */
   const truncateText = (text: string, maxLength: number = 100) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
 
+  /**
+   * handleViewFeedback: opens the feedback modal and stores the selected
+   * feedback so the modal can render its full details.
+   */
   const handleViewFeedback = (feedback: Feedback) => {
     setSelectedFeedback(feedback);
     setIsFeedbackModalOpen(true);
   };
 
-  // Filter configuration
+  // Filter configuration consumed by `FilterBar`. This builds a single
+  // custom date-range filter which uses `CustomDateRangePicker` as the UI.
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
       key: 'dateRange',
@@ -110,7 +129,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
         />
       )}
 
-      {/* Table Container */}
+      {/* Table Container: shows loading spinner, empty state, or the feedback table */}
       <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden min-h-[300px]">
         {loading ? (
           <LoadingSpinner />
@@ -122,6 +141,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
           </div>
         ) : (
           <>
+            {/* Data table: fixed column widths and optional Event column */}
             <div className="overflow-x-auto min-h-[350px]">
               <table className="w-full table-fixed min-w-[800px]">
                 <colgroup>
@@ -157,8 +177,10 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
+                  {/* Map each feedback to a table row. Columns: User, Event (optional), Rating, Comments, Date, Actions */}
                   {feedbacks.map((feedback) => (
                     <tr key={feedback._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
+                      {/* User column: shows full name, username, or 'Anonymous' */}
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div>
                           {feedback.firstName && feedback.lastName ? (
@@ -196,6 +218,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                           </span>
                         </div>
                       </td>
+                      {/* Comments column: truncated preview with tooltip containing full text */}
                       <td className="px-4 lg:px-6 py-4">
                         <div className="text-sm text-gray-900 dark:text-dark-100">
                           {feedback.comments ? (
@@ -215,6 +238,7 @@ export const FeedbackTable: React.FC<FeedbackTableProps> = ({
                           {new Date(feedback.createdAt).toLocaleTimeString()}
                         </div>
                       </td>
+                      {/* Actions column: currently supports viewing the full feedback */}
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleViewFeedback(feedback)}

@@ -6,6 +6,13 @@ import { Pagination } from '../ui/pagination';
 import { FilterBar } from '../ui/filter-bar';
 import { CustomDateRangePicker } from '../ui/custom-date-range-picker';
 
+/**
+ * Props for the `ActivityTable` component.
+ * - `activities`: list of user activity records to display
+ * - `loading`: whether data is currently loading
+ * - Pagination, filter, and sorting callbacks are passed in to
+ *   allow parent components to control behavior.
+ */
 interface ActivityTableProps {
   activities: UserActivity[];
   loading: boolean;
@@ -49,6 +56,9 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
   sortOrder = 'desc',
   onSortChange
 }) => {
+  // Returns a Tailwind CSS string used to color-code the activity's component
+  // (e.g., 'auth', 'event', 'transactions'). This provides a visual cue
+  // in the UI by applying background/text color classes.
   const getComponentColor = (component: string) => {
     switch (component) {
       case 'auth':
@@ -73,6 +83,8 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
     }
   };
 
+  // Maps activity types (login, logout, create, update, delete...) to
+  // Tailwind CSS classes so each activity type gets a distinct color badge.
   const getActivityTypeColor = (activityType: string) => {
     switch (activityType.toLowerCase()) {
       case 'login':
@@ -93,6 +105,9 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
     }
   };
 
+  // Called when the user requests sorting by a specific field (e.g., date).
+  // If the field is already the active sort field we toggle the order,
+  // otherwise we set the new field with a default order (desc).
   const handleSort = (field: string) => {
     if (!onSortChange) return;
     
@@ -105,6 +120,10 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
     }
   };
 
+  // Returns the appropriate sort icon depending on active sort state.
+  // - If sorting is not enabled or this is not the active field show a
+  //   neutral `ArrowUpDown` icon.
+  // - If this is the active field, show `ArrowUp` or `ArrowDown`.
   const getSortIcon = (field: string) => {
     if (!onSortChange || sortBy !== field) {
       return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
@@ -115,6 +134,10 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
       : <ArrowDown className="w-4 h-4 text-primary-600" />;
   };
   // Filter configuration
+  // Build the configuration used by the `FilterBar` component. Each entry
+  // describes a filter control: its key, label, current value, and the UI
+  // component to render (or a set of options for simple selects).
+  // When required filter callbacks are not provided this becomes an empty list.
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
       key: 'dateRange',
@@ -170,7 +193,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Filters: renders when `showFilters` is true and filter callbacks are provided. */}
       {showFilters && filters && onFilterChange && onClearFilters && (
         <FilterBar
           filters={filterConfigs}
@@ -182,11 +205,13 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
         />
       )}
 
-      {/* Table Container */}
+      {/* Table Container: shows spinner, empty state, or the activity table. */}
       <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 overflow-hidden min-h-[300px]">
         {loading ? (
+          // Loading state: centered spinner while activities are fetched.
           <LoadingSpinner />
         ) : activities.length === 0 ? (
+          // Empty state: icon, heading and description when no activities exist.
           <div className="text-center py-12">
             <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-dark-100 mb-2">{emptyMessage}</h3>
@@ -194,6 +219,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
           </div>
         ) : (
           <>
+            {/* Table: horizontally scrollable with fixed column widths. */}
             <div className="overflow-x-auto min-h-[350px]">
               <table className="w-full table-fixed min-w-[800px]">
                 <colgroup>
@@ -218,6 +244,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
                       User
                     </th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-300 uppercase tracking-wider">
+                      {/* Sortable header: clicking toggles date sort if `onSortChange` provided. */}
                       <button
                         onClick={() => handleSort('createdAt')}
                         className="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-dark-200 transition-colors duration-200"
@@ -230,6 +257,8 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-700">
+                  {/* Render each activity row. Each cell contains formatted data and
+                      uses helper functions above to decide badge styling. */}
                   {activities.map((activity) => (
                     <tr key={activity._id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-200">
                       <td className="px-4 lg:px-6 py-4">
@@ -266,7 +295,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination controls - delegates page changes to parent callbacks. */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

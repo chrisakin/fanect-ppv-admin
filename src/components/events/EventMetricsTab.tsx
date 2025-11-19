@@ -7,25 +7,40 @@ import { availableCurrencies, currencyNames } from '../../constants/currencies';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { ErrorAlert } from '../ui/error-alert';
 
+/** Props for EventMetricsTab */
 interface EventMetricsTabProps {
   eventId: string;
 }
 
+/**
+ * `EventMetricsTab` displays analytics for a single event.
+ * It fetches metrics from `eventMetricsService` and renders:
+ * - Filters (month & currency)
+ * - Key metric cards (views, revenue, transactions, rating)
+ * - Charts (revenue over time, rating distribution)
+ * - Detailed breakdowns and recent feedback
+ */
 export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => {
-  const [metrics, setMetrics] = useState<EventMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Component state
+  const [metrics, setMetrics] = useState<EventMetrics | null>(null); // fetched metrics payload
+  const [loading, setLoading] = useState(true); // loading indicator for fetch
+  const [error, setError] = useState<string | null>(null); // error message if fetch fails
+  // selectedMonth default is current year-month in `YYYY-MM` format
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
 
-  // Fetch metrics when component mounts or filters change
+  // Fetch metrics when component mounts or when any filter changes.
   useEffect(() => {
     fetchMetrics();
   }, [eventId, selectedMonth, selectedCurrency]);
 
+  /**
+   * fetchMetrics: calls the service to retrieve metrics for the selected
+   * event, month and currency. Sets `metrics`, `loading` and `error` state.
+   */
   const fetchMetrics = async () => {
     try {
       setLoading(true);
@@ -40,6 +55,7 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
     }
   };
 
+  /** formatCurrency: helper that formats numbers into a localized currency string */
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -50,6 +66,7 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
     return formatter.format(amount);
   };
 
+  /** renderStars: returns 5 star icons with filled/empty state based on `rating` */
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -59,7 +76,11 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
     ));
   };
 
-  // Prepare chart data from transactions
+  /**
+   * getRevenueChartData: transforms raw transactions into a format suitable
+   * for the revenue AreaChart by grouping transactions per date and summing
+   * their amounts.
+   */
   const getRevenueChartData = () => {
     if (!metrics?.earnings.transactions) return [];
     
@@ -73,10 +94,14 @@ export const EventMetricsTab: React.FC<EventMetricsTabProps> = ({ eventId }) => 
       return acc;
     }, {} as Record<string, { date: string; revenue: number }>);
     
+    // Return sorted array of { date, revenue }
     return Object.values(groupedData).sort((a, b) => a.date.localeCompare(b.date));
   };
 
-  // Prepare rating breakdown data for pie chart
+  /**
+   * getRatingBreakdownData: maps the ratings breakdown into Pie chart data
+   * with colors and only includes star counts > 0.
+   */
   const getRatingBreakdownData = () => {
     if (!metrics?.ratings[0]?.breakdown) return [];
     

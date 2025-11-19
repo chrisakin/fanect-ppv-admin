@@ -7,6 +7,13 @@ import { FilterBar } from '../ui/filter-bar';
 import { CustomDateRangePicker } from '../ui/custom-date-range-picker';
 import { ActionDropdown } from '../ui/action-dropdown';
 
+/**
+ * Filter shape used by the `FilterBar` for events.
+ * - `status`: event lifecycle state (Live, Upcoming, Past)
+ * - `adminStatus`: approval state (Pending, Approved, Rejected)
+ * - `searchTerm`: free-text search input
+ * - `startDate` / `endDate`: date range filter values
+ */
 interface EventFilters {
   status: string;
   adminStatus: string;
@@ -15,6 +22,12 @@ interface EventFilters {
   endDate: string;
 }
 
+/**
+ * Props for `EventsTable`.
+ * This component is a presentational table that displays a paginated
+ * list of events and delegates actions (view/edit/publish/delete) to
+ * parent handlers via callbacks.
+ */
 interface EventsTableProps {
   events: ApiEvent[];
   loading: boolean;
@@ -82,6 +95,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
   sortOrder = 'desc',
   onSortChange
 }) => {
+  // Returns an icon representing the admin approval status.
+  // Used in the Approval Status column to provide a quick visual cue.
   const getStatusIcon = (adminStatus: string) => {
     switch (adminStatus) {
       case 'Approved':
@@ -95,6 +110,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     }
   };
 
+  // Maps admin approval status to Tailwind CSS classes used for the
+  // colored badge shown next to the status label.
   const getStatusColor = (adminStatus: string) => {
     switch (adminStatus) {
       case 'Approved':
@@ -108,6 +125,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     }
   };
 
+  // Formats numeric amounts to localized currency strings.
+  // Uses NGN when currency is 'NGN', otherwise defaults to USD formatting.
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -118,7 +137,10 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     return formatter.format(amount);
   };
 
-  // Action dropdown component
+  // Build the array of action items passed to `ActionDropdown` for a row.
+  // Each item can contain an icon, label, click handler and optional
+  // disabled/className metadata. Actions are conditionally included based
+  // on passed-in callbacks and the event state (published, adminStatus, etc).
   const getEventActionItems = (event: ApiEvent) => {
     const items = [];
 
@@ -140,6 +162,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     }
 
     // Only show full actions if showFullActions is true
+    // If `showFullActions` is false only include basic actions (view/edit).
     if (!showFullActions) {
       return items;
     }
@@ -215,9 +238,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       });
     }
 
+    // Return the final list of action items for the dropdown component.
     return items;
   };
 
+  // Handle column sorting requests. Toggles direction if the same field
+  // is clicked twice; otherwise sets the new field with a default 'desc'.
   const handleSort = (field: string) => {
     if (!onSortChange) return;
     
@@ -230,6 +256,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({
     }
   };
 
+  // Returns the visual sort icon for a sortable column based on state.
   const getSortIcon = (field: string) => {
     if (!onSortChange || sortBy !== field) {
       return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
@@ -240,7 +267,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({
       : <ArrowDown className="w-4 h-4 text-primary-600" />;
   };
 
-  // Filter configuration
+  // Configuration consumed by the `FilterBar` component. Each config entry
+  // declares a filter control key, label, current value and either a list
+  // of select `options` or a `component` (custom control) to render.
   const filterConfigs = filters && onFilterChange && onClearFilters ? [
     {
       key: 'status',

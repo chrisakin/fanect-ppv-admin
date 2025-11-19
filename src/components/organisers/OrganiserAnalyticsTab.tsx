@@ -26,10 +26,21 @@ interface OrganiserAnalyticsTabProps {
   organiserId: string;
 }
 
+/**
+ * OrganiserAnalyticsTab
+ *
+ * Shows analytics for a single organiser. The component fetches data from
+ * `organiserAnalyticsService` and renders overview cards, charts, lists and
+ * insights. It accepts filter controls (month and currency) which trigger
+ * a refresh when changed.
+ */
 export const OrganiserAnalyticsTab: React.FC<OrganiserAnalyticsTabProps> = ({ organiserId }) => {
+  // Core data and UI state
   const [analytics, setAnalytics] = useState<OrganiserAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filters: month is stored as yyyy-MM and currency code (USD, NGN, etc.)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -41,6 +52,13 @@ export const OrganiserAnalyticsTab: React.FC<OrganiserAnalyticsTabProps> = ({ or
     fetchAnalytics();
   }, [organiserId, selectedMonth, selectedCurrency]);
 
+  /**
+   * fetchAnalytics
+   *
+   * Calls the organiser analytics service with the current filters and
+   * updates local state. Shows a loading spinner while the request is in
+   * progress and surfaces API errors through `error`.
+   */
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
@@ -55,6 +73,11 @@ export const OrganiserAnalyticsTab: React.FC<OrganiserAnalyticsTabProps> = ({ or
     }
   };
 
+  /**
+   * formatCurrency
+   *
+   * Helper to format numeric amounts into localized currency strings.
+   */
   const formatCurrency = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -65,6 +88,12 @@ export const OrganiserAnalyticsTab: React.FC<OrganiserAnalyticsTabProps> = ({ or
     return formatter.format(amount);
   };
 
+  /**
+   * renderStars
+   *
+   * Render a 5-star rating visual using the `Star` icon. Filled stars are
+   * shown for values less than the rating.
+   */
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star

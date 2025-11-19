@@ -1,11 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Search, MapPin, Plus } from 'lucide-react';
 
+/**
+ * Small shape representing an available location option.
+ */
 interface LocationOption {
-  value: string;
-  label: string;
+  value: string; // short country code
+  label: string; // human-friendly country name
 }
 
+/**
+ * Props accepted by the LocationModal component.
+ * - `isOpen`: whether modal is visible
+ * - `onClose`: callback to close the modal
+ * - `onSubmit`: callback invoked with selected location codes
+ * - `existingLocations`: location codes already assigned to the event
+ * - `isSubmitting`: whether the parent is currently submitting (disables UI)
+ */
 interface LocationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,7 +25,10 @@ interface LocationModalProps {
   isSubmitting: boolean;
 }
 
-// List of all available locations (countries)
+// Master list of supported locations. Kept as a static sorted array so the
+// UI shows countries alphabetically. This list is deliberately exhaustive
+// for the admin UI; it can be replaced by a remote list if localization is
+// required later.
 const ALL_LOCATIONS: LocationOption[] = [
   { value: 'US', label: 'United States' },
   { value: 'CA', label: 'Canada' },
@@ -127,67 +141,98 @@ const ALL_LOCATIONS: LocationOption[] = [
   { value: 'NZ', label: 'New Zealand' }
 ].sort((a, b) => a.label.localeCompare(b.label));
 
+/**
+ * LocationModal
+ *
+ * Modal UI used to add/remove event locations. The component is controlled
+ * by the parent via `isOpen` and reports selected locations via `onSubmit`.
+ * It intentionally keeps local UI state (search term, selected locations)
+ * so the parent doesn't need to manage intermediate selection state.
+ */
 export const LocationModal: React.FC<LocationModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
   existingLocations,
-  isSubmitting
+  isSubmitting,
 }) => {
+  // Search input value.
   const [searchTerm, setSearchTerm] = useState('');
+  // Locally selected location codes (not yet submitted).
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  // Reference to the search input so we can focus it when the modal opens.
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens/closes
+  // Reset local state and focus the search input when the modal is opened.
   useEffect(() => {
     if (isOpen) {
       setSelectedLocations([]);
       setSearchTerm('');
+      // Small timeout to ensure the element is mounted before focusing.
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
     }
   }, [isOpen]);
 
-  // Filter locations based on search term and exclude existing ones
-  const filteredLocations = ALL_LOCATIONS.filter(location => {
+  // Compute list of locations that match the search term and are not
+  // already assigned to the event (`existingLocations`). The matching is
+  // case-insensitive and checks both label and code.
+  const filteredLocations = ALL_LOCATIONS.filter((location) => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = location.label.toLowerCase().includes(searchLower) ||
-                         location.value.toLowerCase().includes(searchLower);
+    const matchesSearch =
+      location.label.toLowerCase().includes(searchLower) ||
+      location.value.toLowerCase().includes(searchLower);
     const notExisting = !existingLocations.includes(location.value);
     return matchesSearch && notExisting;
   });
 
+  /**
+   * Toggle a location in the local selection array. If already selected,
+   * remove it; otherwise add it.
+   */
   const handleLocationToggle = (locationValue: string) => {
     if (selectedLocations.includes(locationValue)) {
-      setSelectedLocations(prev => prev.filter(loc => loc !== locationValue));
+      setSelectedLocations((prev) => prev.filter((loc) => loc !== locationValue));
     } else {
-      setSelectedLocations(prev => [...prev, locationValue]);
+      setSelectedLocations((prev) => [...prev, locationValue]);
     }
   };
 
+  /**
+   * Submit handler: calls parent's `onSubmit` with the selected codes when
+   * there is at least one selection. The parent is responsible for closing
+   * the modal or showing success state.
+   */
   const handleSubmit = () => {
     if (selectedLocations.length > 0) {
       onSubmit(selectedLocations);
     }
   };
 
+  /**
+   * Close handler: clears local selection and notifies the parent.
+   */
   const handleClose = () => {
     setSelectedLocations([]);
     setSearchTerm('');
     onClose();
   };
 
+  // Utility to convert a location code back into a human-readable label.
   const getLocationLabel = (locationValue: string) => {
-    const location = ALL_LOCATIONS.find(loc => loc.value === locationValue);
+    const location = ALL_LOCATIONS.find((loc) => loc.value === locationValue);
     return location ? location.label : locationValue;
   };
 
+  // Do not render the modal when it is closed.
   if (!isOpen) return null;
 
   return (
+    // Backdrop and centered modal container
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-dark-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        {/* Header: title and close button */}
         <div className="p-6 border-b border-gray-200 dark:border-dark-700">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-100">Add Event Locations</h3>
@@ -200,9 +245,9 @@ export const LocationModal: React.FC<LocationModalProps> = ({
             </button>
           </div>
         </div>
-        
+
         <div className="p-6 space-y-6">
-          {/* Search Input */}
+          {/* Search Input: filters available locations as the user types */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-dark-400" />
             <input
@@ -216,7 +261,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
             />
           </div>
 
-          {/* Selected Locations */}
+          {/* Selected Locations: shows chips for items the admin selected locally */}
           {selectedLocations.length > 0 && (
             <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-900 dark:text-dark-100 mb-3">
@@ -243,11 +288,9 @@ export const LocationModal: React.FC<LocationModalProps> = ({
             </div>
           )}
 
-          {/* Available Locations */}
+          {/* Available Locations: scrollable list of countries the admin can add */}
           <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-dark-100 mb-3">
-              Available Locations
-            </h4>
+            <h4 className="text-sm font-medium text-gray-900 dark:text-dark-100 mb-3">Available Locations</h4>
             <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-dark-700 rounded-lg">
               {filteredLocations.length > 0 ? (
                 filteredLocations.map((location) => {
@@ -263,9 +306,11 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isSelected ? 'bg-primary-600' : 'bg-gray-100 dark:bg-dark-600'
-                        }`}>
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isSelected ? 'bg-primary-600' : 'bg-gray-100 dark:bg-dark-600'
+                          }`}
+                        >
                           {isSelected ? (
                             <Plus className="w-4 h-4 text-white rotate-45" />
                           ) : (
@@ -273,19 +318,11 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                           )}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-dark-100">
-                            {location.label}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-dark-400">
-                            {location.value}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-dark-100">{location.label}</div>
+                          <div className="text-xs text-gray-500 dark:text-dark-400">{location.value}</div>
                         </div>
                       </div>
-                      {isSelected && (
-                        <div className="text-primary-600 dark:text-primary-400 text-xs font-medium">
-                          Selected
-                        </div>
-                      )}
+                      {isSelected && <div className="text-primary-600 dark:text-primary-400 text-xs font-medium">Selected</div>}
                     </button>
                   );
                 })
@@ -298,7 +335,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer: cancel + submit actions. Submit shows a spinner when `isSubmitting` */}
         <div className="p-6 border-t border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-700">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600 dark:text-dark-300">
