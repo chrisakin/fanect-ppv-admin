@@ -1,6 +1,15 @@
 import React, { useRef, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 
+/**
+ * ActionItem
+ * Short shape for an action entry inside the ActionDropdown menu.
+ * - icon: icon component rendered on the left
+ * - label: visible text
+ * - onClick: invoked when the item is selected
+ * - disabled: optional flag to disable the action
+ * - className: optional extra classes for styling
+ */
 interface ActionItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -9,6 +18,13 @@ interface ActionItem {
   className?: string;
 }
 
+/**
+ * Props for ActionDropdown
+ * - items: list of ActionItem entries
+ * - isOpen / onToggle: control visibility
+ * - isLoading: disables interactions while true
+ * - onClickOutside: optional callback for clicks outside the dropdown
+ */
 interface ActionDropdownProps {
   items: ActionItem[];
   isOpen: boolean;
@@ -17,6 +33,10 @@ interface ActionDropdownProps {
   onClickOutside?: () => void;
 }
 
+/**
+ * ActionDropdown
+ * Small utility that renders a More (vertical) button which toggles a menu of actions.
+ */
 export const ActionDropdown: React.FC<ActionDropdownProps> = ({
   items,
   isOpen,

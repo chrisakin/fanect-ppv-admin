@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { organiserService, ApiOrganiser, OrganiserStatus } from '../services/organiserService';
 
+/**
+ * OrganiserFilters
+ * Filters for querying organisers by status, lock status, and date range.
+ */
 interface OrganiserFilters {
   status: OrganiserStatus | 'All';
   locked: 'All' | 'Locked' | 'Not Locked';
@@ -9,6 +13,10 @@ interface OrganiserFilters {
   endDate: string;
 }
 
+/**
+ * OrganiserState
+ * Zustand store for managing organiser list with lock/unlock actions and filtering.
+ */
 interface OrganiserState {
   organisers: ApiOrganiser[];
   loading: boolean;
@@ -48,6 +56,10 @@ const initialFilters: OrganiserFilters = {
   endDate: ''
 };
 
+/**
+ * useOrganiserStore
+ * Access organiser list with lock/unlock functionality and filtering.
+ */
 export const useOrganiserStore = create<OrganiserState>((set, get) => ({
   organisers: [],
   loading: false,

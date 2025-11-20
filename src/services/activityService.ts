@@ -1,6 +1,11 @@
 import api from '../utils/api';
 import { UserActivitiesResponse, ActivityFilters } from '../types/activity';
 
+/**
+ * activityService
+ * Helper methods for fetching activity logs (user/admin) with pagination, filters and sorting.
+ * Each method returns the API response data shape defined in ../types/activity.
+ */
 export const activityService = {
   // Get user activities with pagination and filters
   getUserActivities: async (

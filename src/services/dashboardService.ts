@@ -101,6 +101,10 @@ export interface DashboardResponse {
   data: DashboardAnalytics;
 }
 
+/**
+ * dashboardService
+ * Fetches aggregated dashboard analytics (users, events, revenue, charts) for the admin panel.
+ */
 export const dashboardService = {
   // Get dashboard analytics
   getDashboardAnalytics: async (

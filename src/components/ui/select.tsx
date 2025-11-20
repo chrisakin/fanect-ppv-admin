@@ -4,6 +4,10 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * Select primitives
+ * Thin wrappers around @radix-ui/react-select with default styling.
+ */
 const Select = SelectPrimitive.Root
 
 const SelectGroup = SelectPrimitive.Group

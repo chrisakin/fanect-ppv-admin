@@ -1,3 +1,7 @@
+/**
+ * Feedback
+ * Represents a single user feedback entry tied to an event.
+ */
 export interface Feedback {
   _id: string;
   ratings: number;
@@ -15,6 +19,10 @@ export interface Feedback {
   lastName?: string;
 }
 
+/**
+ * FeedbackResponse
+ * Paginated response wrapper for feedback listing endpoints.
+ */
 export interface FeedbackResponse {
   message: string;
   docs: Feedback[];
@@ -26,6 +34,10 @@ export interface FeedbackResponse {
   limit: number;
 }
 
+/**
+ * FeedbackFilters
+ * Query filters used when fetching feedback lists (search and date range).
+ */
 export interface FeedbackFilters {
   searchTerm: string;
   startDate: string;

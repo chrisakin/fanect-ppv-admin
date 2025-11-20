@@ -1,12 +1,21 @@
 import React from 'react';
 import { AlertCircle, X } from 'lucide-react';
 
+/**
+ * ErrorAlertProps: props for the error alert component
+ * - isOpen: whether the alert is visible
+ * - message: text to display
+ */
 interface ErrorAlertProps {
   isOpen: boolean;
   message: string;
   onClose: () => void;
 }
 
+/**
+ * ErrorAlert
+ * Small dismissible inline alert used to show errors/messages in pages.
+ */
 export const ErrorAlert: React.FC<ErrorAlertProps> = ({ isOpen, message, onClose }) => {
   if (!isOpen) return null;
 

@@ -1,6 +1,10 @@
 import api from '../utils/api';
 import { FeedbackResponse, FeedbackFilters } from '../types/feedback';
 
+/**
+ * feedbackService
+ * Methods to list feedbacks globally or for a specific event with paging and simple filters.
+ */
 export const feedbackService = {
   // Get all feedbacks with pagination and filters
   getAllFeedbacks: async (

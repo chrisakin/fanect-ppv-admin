@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { adminService, ApiAdmin, AdminStatus } from '../services/adminService';
 
+/**
+ * AdminFilters
+ * Filter configuration for admin list queries (status, locked, search, date range).
+ */
 interface AdminFilters {
   status: AdminStatus | 'All';
   locked: 'All' | 'Locked' | 'Not Locked';

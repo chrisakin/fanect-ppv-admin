@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 
+/**
+ * Props for ConfirmationModal
+ * - isOpen: controls visibility
+ * - onClose: close handler
+ * - onConfirm: called when user confirms (optionally with reason)
+ * - showReasonInput: whether a textarea for a reason should be shown
+ */
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +20,10 @@ interface ConfirmationModalProps {
   isLoading?: boolean;
 }
 
+/**
+ * ConfirmationModal
+ * Modal that asks the user to confirm an action. Optionally requests a reason.
+ */
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isOpen,
   onClose,

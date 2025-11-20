@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, X, Search } from 'lucide-react';
 import { availableCurrencies, currencyNames } from '../../constants/currencies';
 
+/**
+ * Props for CurrencyFilterDropdown
+ * - selectedCurrencies: currently selected currency codes
+ * - onChange: called with updated array when selection changes
+ */
 interface CurrencyFilterDropdownProps {
   selectedCurrencies: string[];
   onChange: (currencies: string[]) => void;
@@ -9,6 +14,10 @@ interface CurrencyFilterDropdownProps {
   className?: string;
 }
 
+/**
+ * CurrencyFilterDropdown
+ * Dropdown with searchable list of currencies allowing multiple selection.
+ */
 export const CurrencyFilterDropdown: React.FC<CurrencyFilterDropdownProps> = ({
   selectedCurrencies,
   onChange,

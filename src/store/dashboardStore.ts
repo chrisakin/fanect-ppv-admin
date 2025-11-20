@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { dashboardService, DashboardAnalytics } from '../services/dashboardService';
 
+/**
+ * DashboardState
+ * Zustand store for dashboard analytics with timeframe and currency controls.
+ */
 interface DashboardState {
   analytics: DashboardAnalytics | null;
   loading: boolean;

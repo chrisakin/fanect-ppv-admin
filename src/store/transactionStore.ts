@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { transactionService } from '../services/transactionService';
 import { UserTransaction, TransactionFilters } from '../types/transaction';
 
+/**
+ * TransactionState
+ * Zustand store for managing user transaction history with pagination and filtering.
+ */
 interface TransactionState {
   transactions: UserTransaction[];
   loading: boolean;
@@ -39,6 +43,10 @@ const initialFilters: TransactionFilters = {
   endDate: ''
 };
 
+/**
+ * useTransactionStore
+ * Access transaction history for a specific user with payment and gift status filters.
+ */
 export const useTransactionStore = create<TransactionState>((set, get) => ({
   transactions: [],
   loading: false,

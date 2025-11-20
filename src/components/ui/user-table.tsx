@@ -6,6 +6,10 @@ import { FilterBar } from './filter-bar';
 import { CustomDateRangePicker } from './custom-date-range-picker';
 import { ActionDropdown } from './action-dropdown';
 
+/**
+ * BaseUser
+ * Minimal user shape used by the UserTable.
+ */
 export interface BaseUser {
   _id: string;
   email: string;
@@ -22,6 +26,10 @@ export interface BaseUser {
   eventCreated?: number;
 }
 
+/**
+ * UserFilters
+ * Shape representing current filter values (status, locked, search, date range)
+ */
 interface UserFilters {
   status: string;
   locked: string;
@@ -30,6 +38,10 @@ interface UserFilters {
   endDate: string;
 }
 
+/**
+ * Props for UserTable
+ * A comprehensive table used to list users with filtering, sorting and actions.
+ */
 interface UserTableProps {
   users: BaseUser[];
   loading: boolean;
@@ -67,6 +79,12 @@ interface UserTableProps {
   onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
+/**
+ * UserTable
+ * Reusable table component for listing users. Supports:
+ * - configurable columns (username, events, role)
+ * - filtering, pagination, sorting and per-user actions
+ */
 export const UserTable: React.FC<UserTableProps> = ({
   users,
   loading,

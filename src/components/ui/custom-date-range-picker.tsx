@@ -4,11 +4,20 @@ import { Button } from './button';
 import { Input } from './input';
 import { cn } from '../../lib/utils';
 
+/**
+ * DateRange: simple shape representing start and end dates (YYYY-MM-DD) or null.
+ */
 interface DateRange {
   startDate: string | null;
   endDate: string | null;
 }
 
+/**
+ * Props for CustomDateRangePicker
+ * - value: current range
+ * - onChange: called with selected range
+ * - showSearchButton: if true, an explicit Search action applies the selection
+ */
 interface CustomDateRangePickerProps {
   value: DateRange;
   onChange: (dateRange: DateRange) => void;
@@ -26,6 +35,10 @@ const months = [
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/**
+ * CustomDateRangePicker
+ * Allows selecting a start and end date. Can apply immediately or via a Search button.
+ */
 export const CustomDateRangePicker: React.FC<CustomDateRangePickerProps> = ({
   value,
   onChange,

@@ -1,14 +1,26 @@
+/**
+ * TransactionStatus
+ * Possible states for a transaction.
+ */
 export enum TransactionStatus {
   SUCCESSFUL = 'Successful',
   PENDING = 'Pending',
   FAILED = 'Failed'
 }
 
+/**
+ * PaymentMethod
+ * Payment gateway identifiers used on transactions.
+ */
 export enum PaymentMethod {
   FLUTTERWAVE = 'flutterwave',
   STRIPE = 'stripe'
 }
 
+/**
+ * UserTransaction
+ * Detailed transaction record associated with a user and an event.
+ */
 export interface UserTransaction {
   _id: string;
   user: string;
@@ -30,6 +42,10 @@ export interface UserTransaction {
   eventId: string;
 }
 
+/**
+ * UserTransactionsResponse
+ * Paginated response wrapper for user transaction lists.
+ */
 export interface UserTransactionsResponse {
   message: string;
   docs: UserTransaction[];
@@ -41,6 +57,10 @@ export interface UserTransactionsResponse {
   limit: number;
 }
 
+/**
+ * TransactionFilters
+ * Query filters used when fetching transaction lists (status, method, date range).
+ */
 export interface TransactionFilters {
   status: TransactionStatus | 'All';
   giftStatus: 'All' | 'gift' | 'not-gift';

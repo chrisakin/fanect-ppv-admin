@@ -1,20 +1,36 @@
 import api from '../utils/api';
 
+/**
+ * EventLocation
+ * Simple representation of a saved location for an event.
+ */
 interface EventLocation {
   location: string;
   _id: string;
 }
 
+/**
+ * EventLocationsApiResponse
+ * Response shape for fetching locations for an event.
+ */
 interface EventLocationsApiResponse {
   message: string;
   locations: EventLocation[];
 }
 
+/**
+ * LocationPayload
+ * Payload used when adding/removing a location from an event.
+ */
 interface LocationPayload {
   location: string;
   event: string;
 }
 
+/**
+ * locationService
+ * CRUD helpers for event locations (list, add, remove).
+ */
 export const locationService = {
   // Get all locations for an event
   getEventLocations: async (eventId: string): Promise<EventLocationsApiResponse> => {

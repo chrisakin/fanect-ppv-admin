@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { detailedAnalyticsService, DetailedAnalytics, AnalyticsFilters, EventStatus, UserStatus } from '../services/detailedAnalyticsService';
 
+/**
+ * DetailedAnalyticsState
+ * Zustand store for fetching and filtering detailed platform analytics.
+ */
 interface DetailedAnalyticsState {
   analytics: DetailedAnalytics | null;
   loading: boolean;
@@ -24,6 +28,10 @@ const initialFilters: AnalyticsFilters = {
   currency: 'USD'
 };
 
+/**
+ * useDetailedAnalyticsStore
+ * Access detailed platform analytics including user/event/revenue breakdowns.
+ */
 export const useDetailedAnalyticsStore = create<DetailedAnalyticsState>((set, get) => ({
   analytics: null,
   loading: false,

@@ -3,12 +3,20 @@ import api from '../utils/api';
 import { EventCreator } from '../types';
 import { eventService } from './eventService';
 
+/**
+ * EventPrice
+ * Price entry for an event in a specific currency.
+ */
 export interface EventPrice {
   currency: string;
   amount: number;
   _id: string;
 }
 
+/**
+ * ApiEvent
+ * Shape of an event returned by the API. Contains metadata, media URLs and pricing.
+ */
 export interface ApiEvent {
   _id: string;
   name: string;

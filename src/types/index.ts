@@ -1,3 +1,7 @@
+/**
+ * User
+ * Simplified user summary used in dashboards and lists.
+ */
 export interface User {
   id: string;
   name: string;
@@ -11,6 +15,10 @@ export interface User {
 }
 
 // Add interface for API user structure to match the actual API response
+/**
+ * ApiUser
+ * Full user shape returned by the API (admin-facing fields).
+ */
 export interface ApiUser {
   _id: string;
   username: string;
@@ -25,6 +33,10 @@ export interface ApiUser {
   eventsJoinedCount: number;
 }
 
+/**
+ * Event
+ * Summary information for an event used in lists and analytics.
+ */
 export interface Event {
   id: string;
   title: string;
@@ -41,6 +53,10 @@ export interface Event {
   trailerUrl?: string;
 }
 
+/**
+ * EventCreator
+ * Basic contact info for the user who created/published an event.
+ */
 export interface EventCreator {
   username: string;
   email: string;
@@ -49,6 +65,10 @@ export interface EventCreator {
 }
 
 // Add interface for API event structure to match the actual API response
+/**
+ * ApiEventDetailed
+ * Extended API event payload with additional metadata for admin views.
+ */
 export interface ApiEventDetailed extends Omit<ApiEvent, 'eventDateTime'> {
   canWatchSavedStream: boolean;
   publishedBy?: string;
@@ -56,6 +76,10 @@ export interface ApiEventDetailed extends Omit<ApiEvent, 'eventDateTime'> {
   createdBy: EventCreator;
 }
 
+/**
+ * Organizer
+ * Summary metrics for an event organizer.
+ */
 export interface Organizer {
   id: string;
   name: string;
@@ -66,6 +90,10 @@ export interface Organizer {
   joinedDate: Date;
 }
 
+/**
+ * Transaction
+ * Lightweight transaction record used in dashboards and lists.
+ */
 export interface Transaction {
   id: string;
   eventName: string;
@@ -77,6 +105,10 @@ export interface Transaction {
   type: 'Ticket' | 'StreamPass' | 'Gift';
 }
 
+/**
+ * SupportTicket
+ * Support ticket shape used by the help/support flows.
+ */
 export interface SupportTicket {
   id: string;
   userName: string;
@@ -90,6 +122,10 @@ export interface SupportTicket {
   rating?: number;
 }
 
+/**
+ * DashboardStats
+ * High-level metrics shown on the admin dashboard.
+ */
 export interface DashboardStats {
   liveEvents: number;
   totalTicketsSold: number;

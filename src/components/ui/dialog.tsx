@@ -4,6 +4,11 @@ import { X } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * Dialog primitives
+ * A thin wrapper around @radix-ui/react-dialog exposing commonly used subcomponents
+ * (DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, etc.)
+ */
 const Dialog = DialogPrimitive.Root
 
 const DialogTrigger = DialogPrimitive.Trigger

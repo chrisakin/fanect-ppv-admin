@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { feedbackService } from '../services/feedbackService';
 import { Feedback, FeedbackFilters } from '../types/feedback';
 
+/**
+ * FeedbackState
+ * Zustand store for managing feedback listing with pagination and date filtering.
+ */
 interface FeedbackState {
   feedbacks: Feedback[];
   loading: boolean;
@@ -37,6 +41,10 @@ const initialFilters: FeedbackFilters = {
   endDate: ''
 };
 
+/**
+ * useFeedbackStore
+ * Access global and event-specific user feedback with date range filtering.
+ */
 export const useFeedbackStore = create<FeedbackState>((set, get) => ({
   feedbacks: [],
   loading: false,

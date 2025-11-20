@@ -1,6 +1,10 @@
 import api from '../utils/api';
 import { UserTransactionsResponse, TransactionStatus, PaymentMethod, UserTransaction } from '../types/transaction';
 
+/**
+ * AllTransactionsResponse
+ * Paginated response containing all transactions with meta.
+ */
 export interface AllTransactionsResponse {
   message: string;
   docs: UserTransaction[];
@@ -12,6 +16,10 @@ export interface AllTransactionsResponse {
   limit: number;
 }
 
+/**
+ * TransactionStats
+ * Aggregate transaction statistics (totals, counts by status/method).
+ */
 export interface TransactionStats {
   totalTransactions: number;
   totalAmount: number;
@@ -25,6 +33,11 @@ export interface TransactionStats {
   stripeCount: number;
 }
 
+/**
+ * transactionService
+ * Methods to query transactions for users, events or the platform globally.
+ * Includes filtering by status, payment method and date range.
+ */
 export const transactionService = {
   // Get user transactions with pagination and filters
   getUserTransactions: async (

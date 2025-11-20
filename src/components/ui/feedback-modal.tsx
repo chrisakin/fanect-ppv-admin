@@ -2,12 +2,21 @@ import React from 'react';
 import { X, Star, Calendar, User, MessageCircle } from 'lucide-react';
 import { Feedback } from '../../types/feedback';
 
+/**
+ * FeedbackModalProps
+ * - isOpen: show/hide modal
+ * - feedback: Feedback object to display (null to hide content)
+ */
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   feedback: Feedback | null;
 }
 
+/**
+ * FeedbackModal
+ * Displays detailed feedback information including rating, comments and metadata.
+ */
 export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   isOpen,
   onClose,

@@ -3,12 +3,22 @@ import { X, User, Mail, UserCheck, AlertCircle } from 'lucide-react';
 import { AdminRolesEnum, CreateAdminFormData, CreateAdminFormErrors } from '../../types/admin';
 import { adminService } from '../../services/adminService';
 
+/**
+ * Props for CreateAdminModal
+ * - isOpen: controls modal visibility
+ * - onClose: close handler
+ * - onSuccess: callback when admin creation succeeds
+ */
 interface CreateAdminModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (message: string) => void;
 }
 
+/**
+ * CreateAdminModal
+ * Form modal used to create a new admin user with validation and submission.
+ */
 export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
   isOpen,
   onClose,

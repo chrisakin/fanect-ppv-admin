@@ -4,6 +4,11 @@ import { Button } from './button';
 import { Input } from './input';
 import { cn } from '../../lib/utils';
 
+/**
+ * Props for CustomDatePicker
+ * - value: currently selected Date or null
+ * - onChange: receives formatted date string (YYYY-MM-DD) or null
+ */
 interface CustomDatePickerProps {
   value: Date | null;
   onChange: (date: string | null) => void;
@@ -19,6 +24,10 @@ const months = [
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/**
+ * CustomDatePicker
+ * Simple date picker UI that returns selected date as YYYY-MM-DD.
+ */
 export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   value,
   onChange,

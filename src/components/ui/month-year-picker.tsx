@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { ChevronDown, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+/**
+ * Props for MonthYearPicker
+ * - value: YYYY-MM format
+ * - onChange: called with new YYYY-MM string
+ */
 interface MonthYearPickerProps {
   value: string; // Format: YYYY-MM
   onChange: (value: string) => void;
@@ -25,6 +30,10 @@ const months = [
   { value: '12', label: 'December' }
 ];
 
+/**
+ * MonthYearPicker
+ * Compact picker to choose a month and year. Emits values in YYYY-MM format.
+ */
 export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({
   value,
   onChange,

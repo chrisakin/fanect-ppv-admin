@@ -1,10 +1,18 @@
 import api from '../utils/api';
 
+/**
+ * UserStatus
+ * Enum representing user account status.
+ */
 export enum UserStatus {
   ACTIVE = 'Active',
   INACTIVE = 'Inactive',
 }
 
+/**
+ * ApiUser
+ * Shape of a user returned from the API.
+ */
 export interface ApiUser {
   _id: string;
   username: string;
@@ -19,6 +27,10 @@ export interface ApiUser {
   eventsJoinedCount: number;
 }
 
+/**
+ * UsersResponse
+ * Paginated response containing users and pagination meta.
+ */
 export interface UsersResponse {
   message: string;
   docs: ApiUser[];
@@ -30,11 +42,19 @@ export interface UsersResponse {
   limit: number;
 }
 
+/**
+ * SingleUserResponse
+ * Response when a single user is requested.
+ */
 export interface SingleUserResponse {
   message: string;
   user: ApiUser;
 }
 
+/**
+ * userService
+ * Methods for listing, retrieving and updating user accounts (lock/unlock).
+ */
 export const userService = {
   // Get all users with pagination and filters
   getAllUsers: async (

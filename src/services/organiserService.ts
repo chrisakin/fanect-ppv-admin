@@ -1,10 +1,18 @@
 import api from '../utils/api';
 
+/**
+ * OrganiserStatus
+ * Enum representing organiser account status.
+ */
 export enum OrganiserStatus {
   ACTIVE = 'Active',
   INACTIVE = 'Inactive',
 }
 
+/**
+ * ApiOrganiser
+ * Shape of an organiser user returned from the API.
+ */
 export interface ApiOrganiser {
   _id: string;
   username: string;
@@ -19,6 +27,10 @@ export interface ApiOrganiser {
   eventCreated: number;
 }
 
+/**
+ * OrganisersResponse
+ * Paginated response containing organisers and pagination meta.
+ */
 export interface OrganisersResponse {
   message: string;
   docs: ApiOrganiser[];
@@ -30,11 +42,19 @@ export interface OrganisersResponse {
   limit: number;
 }
 
+/**
+ * SingleOrganiserResponse
+ * Response when a single organiser is requested.
+ */
 export interface SingleOrganiserResponse {
   message: string;
   user: ApiOrganiser;
 }
 
+/**
+ * organiserService
+ * Methods for listing, retrieving and updating organiser users (lock/unlock).
+ */
 export const organiserService = {
   // Get all organisers with pagination and filters
   getAllOrganisers: async (

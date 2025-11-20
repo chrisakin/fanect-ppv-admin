@@ -2,9 +2,17 @@ import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * TextareaProps
+ * - Wrapper around native textarea props to centralize styling.
+ */
 export interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
+/**
+ * Textarea
+ * Styled textarea primitive used across forms. Forwards ref to native textarea.
+ */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => {
     return (

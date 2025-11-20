@@ -2,12 +2,20 @@ import { create } from 'zustand';
 import { eventService, CreateEventData, UpdateEventData } from '../services/eventService';
 import { Currency, StreamingDeviceType } from '../types/event';
 
+/**
+ * EventPrice
+ * Event pricing details for a specific currency.
+ */
 export interface EventPrice {
   currency: Currency;
   amount: number;
   _id?: string;
 }
 
+/**
+ * EventFormData
+ * Complete form data structure for creating/editing events.
+ */
 export interface EventFormData {
   name: string;
   date: string;
@@ -23,10 +31,18 @@ export interface EventFormData {
   eventTrailer: File | null;
 }
 
+/**
+ * EventFormErrors
+ * Validation errors for event form fields.
+ */
 export interface EventFormErrors {
   [key: string]: string | undefined;
 }
 
+/**
+ * EventState
+ * Zustand store for managing event form state, file uploads, and submission.
+ */
 interface EventState {
   // Form state
   formData: EventFormData;
@@ -68,6 +84,10 @@ const initialFormData: EventFormData = {
   eventTrailer: null,
 };
 
+/**
+ * useEventStore
+ * Manage event creation/editing forms, file uploads, and validation.
+ */
 export const useEventStore = create<EventState>((set, get) => ({
   formData: initialFormData,
   errors: {},

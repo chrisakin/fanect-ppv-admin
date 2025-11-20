@@ -33,12 +33,22 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * ButtonProps
+ * - Standard HTML button props plus variant and size variants (from cva)
+ * - asChild: render the component as a child slot for composability
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
+/**
+ * Button
+ * Reusable button component supporting multiple visual variants and sizes.
+ * Uses class-variance-authority to compute variant classes.
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"

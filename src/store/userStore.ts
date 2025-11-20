@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { userService, ApiUser, UserStatus } from '../services/userService';
 
+/**
+ * UserFilters
+ * Filters for querying users by status, lock status, and date range.
+ */
 interface UserFilters {
   status: UserStatus | 'All';
   locked: 'All' | 'Locked' | 'Not Locked';
@@ -9,6 +13,10 @@ interface UserFilters {
   endDate: string;
 }
 
+/**
+ * UserState
+ * Zustand store for managing user list with lock/unlock actions and filtering.
+ */
 interface UserState {
   users: ApiUser[];
   loading: boolean;

@@ -1,10 +1,19 @@
 import React from 'react';
 
+/**
+ * LoadingSpinnerProps
+ * - size: small/medium/large
+ * - className: optional extra classes
+ */
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
+/**
+ * LoadingSpinner
+ * Simple animated spinner used while loading data or processes.
+ */
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
   className = '' 

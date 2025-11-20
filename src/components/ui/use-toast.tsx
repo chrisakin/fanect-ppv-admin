@@ -1,5 +1,13 @@
 import * as React from "react"
 
+/**
+ * use-toast
+ * Small in-memory toast manager.
+ * Exports:
+ * - useToast(): hook to read current toasts and create/dismiss toasts
+ * - toast(): helper to add a toast (returns id + controls)
+ */
+
 type ToastProps = {
   title?: string
   description?: string
@@ -71,6 +79,10 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/**
+ * reducer
+ * Pure reducer managing add/update/dismiss/remove toast actions.
+ */
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -137,6 +149,10 @@ function dispatch(action: Action) {
 
 type Toast2 = Omit<Toast, "id">
 
+/**
+ * toast
+ * Convenience to add a toast. Returns {id, dismiss, update}.
+ */
 function toast({ ...props }: Toast2) {
   const id = genId()
 
@@ -166,6 +182,10 @@ function toast({ ...props }: Toast2) {
   }
 }
 
+/**
+ * useToast
+ * Hook that provides the current toasts and helpers (toast, dismiss).
+ */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

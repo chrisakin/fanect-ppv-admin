@@ -2,6 +2,13 @@ import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * Card and subcomponents
+ * - Card: container with card styling
+ * - CardHeader, CardTitle, CardDescription, CardContent, CardFooter: small layout primitives
+ * These are simple forwarded ref components to keep markup consistent.
+ */
+
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

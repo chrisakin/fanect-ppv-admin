@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/**
+ * User
+ * Authenticated user shape stored in auth state.
+ */
 interface User {
   id: string;
   firstName: string;
@@ -9,6 +13,10 @@ interface User {
   role?: string;
 }
 
+/**
+ * AuthState
+ * Zustand store (persisted) for authentication state, user info and tokens.
+ */
 interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
@@ -22,6 +30,10 @@ interface AuthState {
   updateTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
 }
 
+/**
+ * useAuthStore
+ * Persisted Zustand store for managing auth state across page reloads.
+ */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({

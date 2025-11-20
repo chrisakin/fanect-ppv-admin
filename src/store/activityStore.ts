@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { activityService } from '../services/activityService';
 import { UserActivity, ActivityFilters } from '../types/activity';
 
+/**
+ * ActivityState
+ * Zustand store for managing activity logs (user/admin) with pagination, filtering and sorting.
+ */
 interface ActivityState {
   activities: UserActivity[];
   loading: boolean;

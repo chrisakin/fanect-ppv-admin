@@ -1,11 +1,19 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
+/**
+ * FilterOption: single option used in select filters
+ */
 interface FilterOption {
   value: string;
   label: string;
 }
 
+/**
+ * FilterConfig: describes a filter in the FilterBar
+ * - type: 'select' | 'date' | 'search' | 'custom'
+ * - component: when type==='custom', a React node can be provided
+ */
 interface FilterConfig {
   key: string;
   label: string;
@@ -17,6 +25,11 @@ interface FilterConfig {
   component?: React.ReactNode;
 }
 
+/**
+ * Props for FilterBar
+ * - filters: array of FilterConfig describing each filter control
+ * - onFilterChange: called when any filter value changes
+ */
 interface FilterBarProps {
   filters: FilterConfig[];
   onFilterChange: (key: string, value: string) => void;
@@ -26,6 +39,10 @@ interface FilterBarProps {
   searchPlaceholder?: string;
 }
 
+/**
+ * FilterBar
+ * Renders search + configurable filter controls and a clear button.
+ */
 export const FilterBar: React.FC<FilterBarProps> = ({
   filters,
   onFilterChange,

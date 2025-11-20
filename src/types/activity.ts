@@ -1,3 +1,7 @@
+/**
+ * UserActivity
+ * Single activity log entry describing a user's action in the system.
+ */
 export interface UserActivity {
   _id: string;
   eventData: string;
@@ -7,6 +11,10 @@ export interface UserActivity {
   userName: string;
 }
 
+/**
+ * UserActivitiesResponse
+ * Paginated response returned when fetching activity logs.
+ */
 export interface UserActivitiesResponse {
   message: string;
   docs: UserActivity[];
@@ -18,6 +26,10 @@ export interface UserActivitiesResponse {
   limit: number;
 }
 
+/**
+ * ActivityFilters
+ * Filters used to query activity logs (component, search term, date range).
+ */
 export interface ActivityFilters {
   component: string;
   searchTerm: string;

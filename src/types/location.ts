@@ -1,3 +1,7 @@
+/**
+ * EventLocation
+ * Represents a physical location where an event can take place.
+ */
 export interface EventLocation {
   _id: string;
   name: string;
@@ -14,11 +18,19 @@ export interface EventLocation {
   updatedAt: string;
 }
 
+/**
+ * EventLocationsResponse
+ * Response wrapper returning a list of event locations.
+ */
 export interface EventLocationsResponse {
   message: string;
   locations: EventLocation[];
 }
 
+/**
+ * CreateLocationData
+ * Payload for creating or updating an event location.
+ */
 export interface CreateLocationData {
   name: string;
   address: string;
@@ -32,6 +44,10 @@ export interface CreateLocationData {
   capacity?: number;
 }
 
+/**
+ * LocationFormErrors
+ * Client-side validation error shape for location forms.
+ */
 export interface LocationFormErrors {
   name?: string;
   address?: string;

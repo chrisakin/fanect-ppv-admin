@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { eventService, ApiEvent } from '../services/eventService';
 
+/**
+ * EventFilters
+ * Filters for querying organiser events by status, approval, and date range.
+ */
 interface EventFilters {
   status: string;
   adminStatus: string;
@@ -9,6 +13,10 @@ interface EventFilters {
   endDate: string;
 }
 
+/**
+ * OrganiserEventState
+ * Zustand store for managing organiser-specific event listings with filtering.
+ */
 interface OrganiserEventState {
   events: ApiEvent[];
   loading: boolean;
@@ -45,6 +53,10 @@ const initialFilters: EventFilters = {
   endDate: ''
 };
 
+/**
+ * useOrganiserEventStore
+ * Access and filter events created by a specific organiser.
+ */
 export const useOrganiserEventStore = create<OrganiserEventState>((set, get) => ({
   events: [],
   loading: false,

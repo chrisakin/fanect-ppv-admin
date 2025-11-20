@@ -1,6 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
+/**
+ * Props for DescriptionModal
+ * - isOpen: show/hide
+ * - title: heading text
+ * - description: multi-line text displayed inside modal
+ */
 interface DescriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -8,6 +14,10 @@ interface DescriptionModalProps {
   description: string;
 }
 
+/**
+ * DescriptionModal
+ * Shows a modal with a multi-paragraph description (preserves newlines).
+ */
 export const DescriptionModal: React.FC<DescriptionModalProps> = ({
   isOpen,
   onClose,

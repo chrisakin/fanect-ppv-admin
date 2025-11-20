@@ -2,9 +2,17 @@ import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * InputProps
+ * - Basic wrapper around native input props. Kept as a small primitive to centralize styling.
+ */
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
 
+/**
+ * Input
+ * Styled text input used across the app. Forwards ref to the native input element.
+ */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
     return (

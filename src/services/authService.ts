@@ -1,6 +1,10 @@
 import { UserProfile } from '../types/profile';
 import api from '../utils/api';
 
+/**
+ * Auth request/response shapes
+ * Small DTOs used by authService endpoints.
+ */
 export interface LoginRequest {
   email: string;
   password: string;
@@ -35,7 +39,10 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
   password: string;
 }
-
+/**
+ * authService
+ * Authentication related API helpers (login, OTP verify, password reset, profile, logout).
+ */
 export const authService = {
   // Login with username and password
   login: async (data: LoginRequest): Promise<LoginResponse> => {

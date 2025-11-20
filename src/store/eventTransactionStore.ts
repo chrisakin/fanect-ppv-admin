@@ -2,10 +2,18 @@ import { create } from 'zustand';
 import { transactionService } from '../services/transactionService';
 import { UserTransaction, TransactionFilters } from '../types/transaction';
 
+/**
+ * EventTransactionFilters
+ * Filters for querying event transactions by status, payment method, currency.
+ */
 interface EventTransactionFilters extends TransactionFilters {
   currency: string[]; // Array of selected currencies
 }
 
+/**
+ * EventTransactionState
+ * Zustand store for managing event-specific transaction listing with pagination and filtering.
+ */
 interface EventTransactionState {
   transactions: UserTransaction[];
   loading: boolean;
@@ -44,6 +52,10 @@ const initialFilters: EventTransactionFilters = {
   currency: []
 };
 
+/**
+ * useEventTransactionStore
+ * Access and filter transactions for a specific event.
+ */
 export const useEventTransactionStore = create<EventTransactionState>((set, get) => ({
   transactions: [],
   loading: false,

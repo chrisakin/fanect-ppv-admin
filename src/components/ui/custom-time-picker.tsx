@@ -3,6 +3,11 @@ import { ClockIcon } from 'lucide-react';
 import { Input } from './input';
 import { cn } from '../../lib/utils';
 
+/**
+ * Props for CustomTimePicker
+ * - value: time string in HH:mm (24-hour) format
+ * - onChange: receives time string in HH:mm
+ */
 interface CustomTimePickerProps {
   value: string;
   onChange: (time: string) => void;
@@ -11,6 +16,10 @@ interface CustomTimePickerProps {
   className?: string;
 }
 
+/**
+ * CustomTimePicker
+ * Scrollable hour/minute picker with AM/PM, outputs 24-hour format string.
+ */
 export const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
   value,
   onChange,

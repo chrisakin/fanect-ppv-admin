@@ -1,11 +1,19 @@
 import api from '../utils/api';
 import { CreateAdminData } from '../types/admin';
 
+/**
+ * AdminStatus
+ * Simple enum representing admin account status values returned by the API.
+ */
 export enum AdminStatus {
   ACTIVE = 'Active',
   INACTIVE = 'Inactive',
 }
 
+/**
+ * ApiAdmin
+ * Shape of an admin user object returned from the server.
+ */
 export interface ApiAdmin {
   _id: string;
   email: string;
@@ -19,6 +27,10 @@ export interface ApiAdmin {
   role?: string;
 }
 
+/**
+ * AdminsResponse
+ * Paginated response containing admins and pagination meta.
+ */
 export interface AdminsResponse {
   message: string;
   docs: ApiAdmin[];
@@ -30,11 +42,19 @@ export interface AdminsResponse {
   limit: number;
 }
 
+/**
+ * SingleAdminResponse
+ * Response when a single admin is requested.
+ */
 export interface SingleAdminResponse {
   message: string;
   admin: ApiAdmin;
 }
 
+/**
+ * adminService
+ * Methods for listing, retrieving and updating admin users (lock/unlock/create).
+ */
 export const adminService = {
   // Get all admins with pagination and filters
   getAllAdmins: async (

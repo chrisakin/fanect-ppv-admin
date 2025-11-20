@@ -1,8 +1,16 @@
+/**
+ * StreamingDeviceType
+ * Enum describing the type of device used for streaming.
+ */
 export enum StreamingDeviceType {
   MOBILE = 'Mobile',
   NOTMOBILE = 'Not Mobile',
 }
 
+/**
+ * Currency
+ * Supported currency codes used across pricing and transactions.
+ */
 export enum Currency {
     USD = 'USD',
     NGN = 'NGN',
@@ -66,6 +74,10 @@ export enum Currency {
   NONE = "NONE",
 }
 
+/**
+ * IPrice
+ * Represents a monetary price in a specific currency.
+ */
 export interface IPrice {
   currency: Currency;
   amount: number;

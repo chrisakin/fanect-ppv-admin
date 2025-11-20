@@ -1,6 +1,11 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+/**
+ * Props for Pagination component
+ * - currentPage / totalPages: paging state
+ * - totalDocs / limit: used to show range text
+ */
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -10,6 +15,10 @@ interface PaginationProps {
   onNextPage: () => void;
 }
 
+/**
+ * Pagination
+ * Small pagination control showing current page and previous/next actions.
+ */
 export const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,

@@ -1,6 +1,12 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, X } from 'lucide-react';
 
+/**
+ * SuccessAlertProps
+ * - isOpen: visibility
+ * - message: text to display
+ * - autoClose/duration: controls auto-dismiss
+ */
 interface SuccessAlertProps {
   isOpen: boolean;
   message: string;
@@ -9,6 +15,10 @@ interface SuccessAlertProps {
   duration?: number;
 }
 
+/**
+ * SuccessAlert
+ * Small dismissible success toast used across the app.
+ */
 export const SuccessAlert: React.FC<SuccessAlertProps> = ({ 
   isOpen, 
   message, 

@@ -11,6 +11,10 @@ export enum UserStatus {
   INACTIVE = 'Inactive',
 }
 
+/**
+ * DateRange
+ * Simple start/end date pair (YYYY-MM-DD strings)
+ */
 export interface DateRange {
   startDate: string;
   endDate: string;
@@ -100,6 +104,10 @@ export interface DetailedAnalyticsResponse {
   data: DetailedAnalytics;
 }
 
+/**
+ * AnalyticsFilters
+ * Optional filters used by getDetailedAnalytics to restrict the data.
+ */
 export interface AnalyticsFilters {
   startDate?: string;
   endDate?: string;

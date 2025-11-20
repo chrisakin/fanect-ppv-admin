@@ -59,11 +59,19 @@ export interface OrganiserAnalytics {
   topEvents: OrganiserTopEvent[];
 }
 
+/**
+ * OrganiserAnalyticsResponse
+ * Response shape for fetching analytics for a single organiser.
+ */
 export interface OrganiserAnalyticsResponse {
   message: string;
   analytics: OrganiserAnalytics;
 }
 
+/**
+ * organiserAnalyticsService
+ * Fetch per-organiser analytics including events, revenue, engagement and ratings.
+ */
 export const organiserAnalyticsService = {
   // Get organiser analytics
   getOrganiserAnalytics: async (

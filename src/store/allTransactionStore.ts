@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { transactionService, TransactionStats } from '../services/transactionService';
 import { UserTransaction, TransactionFilters } from '../types/transaction';
 
+/**
+ * AllTransactionFilters
+ * Extended filter configuration for global transaction queries (supports multi-currency).
+ */
 interface AllTransactionFilters extends TransactionFilters {
   currency: string[]; // Array of selected currencies
 }

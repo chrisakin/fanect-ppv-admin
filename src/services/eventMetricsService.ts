@@ -1,5 +1,9 @@
 import api from '../utils/api';
 
+/**
+ * EventMetrics
+ * Metrics and aggregated stats for a single event (ratings, earnings, viewers, feedback).
+ */
 export interface EventMetrics {
   _id: string;
   name: string;
@@ -42,6 +46,10 @@ export interface EventMetricsResponse {
   data?: EventMetrics;
 }
 
+/**
+ * eventMetricsService
+ * Fetch per-event analytics such as ratings, earnings and viewers for reporting pages.
+ */
 export const eventMetricsService = {
   // Get event metrics
   getEventMetrics: async (

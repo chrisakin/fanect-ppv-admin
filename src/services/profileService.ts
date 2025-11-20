@@ -1,6 +1,10 @@
 import api from '../utils/api';
 import { UserProfile, UpdateProfileData, ChangePasswordData } from '../types/profile';
 
+/**
+ * profileService
+ * Methods for fetching and updating the current user's profile and password.
+ */
 export const profileService = {
   // Get user profile
   getProfile: async (): Promise<UserProfile> => {
